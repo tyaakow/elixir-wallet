@@ -1,6 +1,6 @@
 defmodule KeyPair do
 
-  def keypair do
+  def keypair() do
     private_key_file = "ec_private_key.pem"
     public_key_file = "ec_public_key.pem"
 
@@ -22,7 +22,7 @@ defmodule KeyPair do
       Base.decode16(append_four_bytes_to_netbytes) |> elem(1) |> :base58.binary_to_base58
   end
 
-  defp generate_keypair do
+  defp generate_keypair() do
     :os.cmd('openssl ecparam -genkey -name secp256k1 -noout -out ec_private_key.pem')
     :os.cmd('openssl ec -in ec_private_key.pem -pubout -out ec_public_key.pem')
     private_key = :os.cmd('openssl ec -in ec_private_key.pem -outform DER|tail -c +8|head -c 32|xxd -p -c 32')

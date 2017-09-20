@@ -1,6 +1,6 @@
 defmodule GenerateIndexes do
 
-  def generate_indexes do
+  def generate_indexes() do
     sliced = :crypto.hash(:sha256, entropy = :crypto.strong_rand_bytes(16))
     |>Bits.extract
     |>Enum.join
