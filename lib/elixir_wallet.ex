@@ -1,0 +1,3 @@
+defmodule ElixirWallet do
+  
+end

@@ -1,0 +1,9 @@
+%{"base58": {:git, "https://github.com/titan098/erl-base58.git", "c5319e77a8edf8c13a3522928384a65511d26a88", []},
+  "base64url": {:hex, :base64url, "0.0.1", "36a90125f5948e3afd7be97662a1504b934dd5dac78451ca6e9abf85a10286be", [], [], "hexpm"},
+  "cryptex": {:hex, :cryptex, "0.0.1", "efe321bb4537916aed78c25336ca7da5617e4595df7d03ac537b7f2f08856401", [], [], "hexpm"},
+  "ecc": {:hex, :ecc, "0.1.3", "a5ff8214a90a3ff52c3c04db411d07704c24704e1879d3eb8f2c9fc5d1c81cba", [], [], "hexpm"},
+  "erl_base58": {:git, "https://github.com/titan098/erl-base58.git", "c5319e77a8edf8c13a3522928384a65511d26a88", []},
+  "erlbase58": {:git, "https://github.com/titan098/erl-base58.git", "c5319e77a8edf8c13a3522928384a65511d26a88", []},
+  "jose": {:hex, :jose, "1.8.4", "7946d1e5c03a76ac9ef42a6e6a20001d35987afd68c2107bcd8f01a84e75aa73", [], [{:base64url, "~> 0.0.1", [hex: :base64url, repo: "hexpm", optional: false]}], "hexpm"},
+  "keccakf1600": {:hex, :keccakf1600, "2.0.0", "69d02d844a101bf3c75484c9e334fd04b0f57280727e881cac3bd8240432f43a", [], [], "hexpm"},
+  "ojson": {:hex, :ojson, "1.0.0", "fd28614eadaec00a15cdb2f53f29d8717a812a508ddb80d202f2f2e2aaeabbcc", [], [], "hexpm"}}

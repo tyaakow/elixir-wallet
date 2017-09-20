@@ -1,0 +1,10 @@
+{application,elixir_wallet,
+             [{applications,[kernel,stdlib,elixir,logger,base58,keccakf1600,
+                             cryptex]},
+              {description,"elixir_wallet"},
+              {modules,['Elixir.ElixirWallet','Elixir.KeyPair',
+                        'Elixir.Mnemonic','Elixir.Wallet',
+                        'Elixir.WalletCrypto']},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {extra_applications,[logger]}]}.
