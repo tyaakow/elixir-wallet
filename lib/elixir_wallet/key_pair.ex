@@ -5,9 +5,21 @@ defmodule KeyPair do
     public_key_file = "ec_public_key.pem"
 
     {private_key, public_key} = generate_keypair()
+    address = generate_wallet_address(public_key)
     overwrite__keypair_file(private_key_file, public_key_file)
-    
-    {private_key, public_key}
+
+    {private_key, public_key, address}
+  end
+
+  defp generate_wallet_address(public_key) do
+      public_sha256 = :crypto.hash(:sha256, public_key) |> Base.encode16()
+      public_ripemd160 = :crypto.hash(:ripemd160, public_sha256) |> Base.encode16()
+      public_add_netbytes = "00" <> public_ripemd160
+      public_sha256_netbytes = :crypto.hash(:sha256, public_add_netbytes) |> Base.encode16()
+      public_sha256_netbytes_2 = :crypto.hash(:sha256, public_sha256_netbytes) |> Base.encode16()
+      slice_four_bytes = public_sha256_netbytes_2 |> to_string() |> String.slice(0..7)
+      append_four_bytes_to_netbytes = public_add_netbytes <> slice_four_bytes
+      Base.decode16(append_four_bytes_to_netbytes) |> elem(1) |> :base58.binary_to_base58
   end
 
   defp generate_keypair do

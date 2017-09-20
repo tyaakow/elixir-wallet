@@ -1,2 +1,0 @@
-defmodule Cryptex do
-end
