@@ -18,7 +18,16 @@ defmodule Mnemonic do
   end
 
   def generate_root_seed(mnemonic, password, opts \\ []) do
-    KeyGenerator.generate(mnemonic, password, opts) |> Base.encode16()
+    KeyGenerator.generate(mnemonic, password, opts)
+    |> generate_master_keys
+  end
+
+  def generate_master_keys(seed) do
+    seed_binary = seed |> Bits.extract |> Enum.join
+    <<private::size(256),chain_code::binary>> = seed
+    private_hex = <<private::256>> |> Base.encode16
+    {public,private} = :crypto.generate_key(:ecdh,:secp256k1,private_hex)
+    {private,public,chain_code}
   end
 
 end
