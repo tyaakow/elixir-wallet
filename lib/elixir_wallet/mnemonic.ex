@@ -25,7 +25,7 @@ defmodule Mnemonic do
   def generate_master_keys(seed) do
     <<private::size(256),chain_code::binary>> = seed
     private_hex = <<private::256>> |> Base.encode16
-    {public, _} = :crypto.generate_key(:ecdh,:secp256k1,private_hex)
+    {public, _} = :crypto.generate_key(:ecdh,:secp256k1,private)
     second_half = public|>Base.encode16 |> String.slice(2,128) |> String.slice(64,64)
     first_half = public|>Base.encode16 |> String.slice(2,128) |> String.slice(0,64)
     {last_digit_int,_} = second_half |> String.slice(63,63)|>Integer.parse(16)
