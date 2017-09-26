@@ -2,9 +2,9 @@ defmodule GenerateIndexes do
 
   def generate_indexes() do
     sliced = :crypto.hash(:sha256, entropy = :crypto.strong_rand_bytes(16))
-    |>Bits.extract
-    |>Enum.join
-    |>String.slice(0,4)
+      |>Bits.extract()
+      |>Enum.join()
+      |>String.slice(0, 4)
     conc_bits = Enum.join(Bits.extract(entropy)) <> sliced
     parse_binary_list(get_sliced_parts(conc_bits))
   end
@@ -24,11 +24,11 @@ defmodule GenerateIndexes do
   def parse_binary_list(list) do
     parsed_list = []
     parsed_list = for n <- list do
-      {value,_} = Integer.parse(n,2)
+      {value, _} = Integer.parse(n, 2)
       [value | parsed_list]
     end
 
-    parsed_list |> List.flatten |> Enum.reverse
+    parsed_list |> List.flatten() |> Enum.reverse()
   end
 
 end

@@ -7,10 +7,11 @@ defmodule Wallet do
     {private, public, address} = KeyPair.keypair()
     data = %{private_key: private, public: public, address: address}
     mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes)
-    seed = Mnemonic.generate_root_seed(mnemonic_phrase, "mnemonic" <> password, iterations: 2048, digest: :sha512)
-    IO.inspect(seed)
-    IO.puts("Use the following phrase as additional authentication when accessing your wallet:\n#{mnemonic_phrase}")
-    encrypted = WalletCrypto.encrypt_wallet(data, password, mnemonic_phrase |> to_string)
+    seed = Mnemonic.generate_root_seed(mnemonic_phrase, "mnemonic" <> password,
+      iterations: 2048, digest: :sha512)
+    IO.puts("Use the following phrase as additional authentication when accessing your wallet:
+      \n#{mnemonic_phrase}")
+    encrypted = WalletCrypto.encrypt_wallet(data, password, to_string(mnemonic_phrase))
 
     IO.binwrite(file, encrypted)
     File.close(file)
