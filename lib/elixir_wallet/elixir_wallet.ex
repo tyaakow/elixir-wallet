@@ -1,4 +1,8 @@
 defmodule Wallet do
+  @moduledoc """
+  To create new wallet use Wallet.create("password") and to inspect the wallet file use
+  WalletCrypto.decrypt("wallet_name", "password", "mnemonic_phrase")
+  """
 
   def create_wallet(password) do
     {{year, month, day}, {hours, minutes, seconds}} = :calendar.local_time()

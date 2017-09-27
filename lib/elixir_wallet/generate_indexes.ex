@@ -1,5 +1,11 @@
 defmodule GenerateIndexes do
+  @moduledoc """
+  Module for generating indexes which are used by Mnemnonic module to generate a phrase
+  """
 
+  @doc """
+  Generates random numbers(indexes) using entropy for guaranteed randomness
+  """
   def generate_indexes() do
     sliced = :crypto.hash(:sha256, entropy = :crypto.strong_rand_bytes(16))
       |>Bits.extract()
