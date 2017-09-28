@@ -4,7 +4,7 @@ defmodule KeyPair do
   """
 
   @doc """
-  Generating a root seed from given mnemonic phrase to further unsure uniqueness of master keys.
+  Generating a root seed from given mnemonic phrase to further ensure uniqueness of master keys.
   """
   def generate_root_seed(mnemonic, password, opts \\ []) do
     generate_master_keys(KeyGenerator.generate(mnemonic, password, opts))
