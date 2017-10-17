@@ -1,7 +1,7 @@
 defmodule GenerateIndexes do
   @moduledoc """
   Module for generating indexes used by the Mnemnonic module
-  to generate a phrase fromo the wordlist
+  to generate a phrase from the wordlist
   """
 
   @doc """
@@ -15,9 +15,9 @@ defmodule GenerateIndexes do
     entropy = :crypto.strong_rand_bytes(16)
     checksum_length = (byte_size(entropy) * 8) / 32 |> trunc()
     checksum = :crypto.hash(:sha256, entropy)
-    |>Bits.to_binary_list()
-    |>Enum.join()
-    |>String.slice(0..checksum_length)
+    |> Bits.to_binary_list()
+    |> Enum.join()
+    |> String.slice(0..checksum_length)
 
     entropy
     |> Bits.to_binary_list()

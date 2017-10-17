@@ -22,9 +22,9 @@ defmodule Wallet do
 
     mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes)
 
-    {private, public, _} =
-      KeyPair.generate_root_seed(mnemonic_phrase, "mnemonic" <> password,
-        iterations: 2048, digest: :sha512)
+    {private, public, _} = KeyPair.generate_root_seed(mnemonic_phrase,
+                              "mnemonic" <> password,
+                              iterations: 2048, digest: :sha512)
 
     address =  KeyPair.generate_wallet_address(public)
 
