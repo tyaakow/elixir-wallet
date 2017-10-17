@@ -44,8 +44,8 @@ defmodule KeyPair do
     end
     <<il::size(256), ir::binary>> = i
     {point, _} = :crypto.generate_key(:ecdh, :secp256k1, il)
-    point_int = point |> Bits.extract() |> Enum.join() |> Integer.parse(2) |> elem(0)
-    pub_int = parent_public_key |> Bits.extract() |> Enum.join |> Integer.parse(2) |>  elem(0)
+    point_int = point |> Bits.to_binary_list() |> Enum.join() |> Integer.parse(2) |> elem(0)
+    pub_int = parent_public_key |> Bits.to_binary_list() |> Enum.join |> Integer.parse(2) |>  elem(0)
     child_public_key =  point_int + pub_int
   end
 
