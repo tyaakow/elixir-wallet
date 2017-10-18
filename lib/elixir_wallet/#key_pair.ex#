@@ -13,7 +13,7 @@ defmodule KeyPair do
       private_key: "CF92B127F1A8F2931261830CE8AA79E6E35AA2AB6E97A5FED2D5EB459744A762",
       public: "02A87C141516843F07C37EE3AE4F1C6A56E5A212076F4756F85122AE42B2FD8062"}
   """
-  @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()
+  @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()x
   def generate_root_seed(mnemonic, password, opts \\ []) do
     generate_master_keys(KeyGenerator.generate(mnemonic, password, opts))
   end
