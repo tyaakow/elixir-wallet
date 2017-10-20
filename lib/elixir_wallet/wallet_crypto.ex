@@ -9,16 +9,29 @@ defmodule WalletCrypto do
   Decripts the data of the wallet file
   using the password and mnemonic_phrase as encriptors
   ## Example
-      iex> WalletCrypto.decrypt_wallet("file_name", "pass", "mnemonic_phrase")
-      %{address: '17sK9AinWc531hbd2NvY87HYGjLhov8W',
+      iex> WalletCrypto.decrypt_wallet("file_path", "pass", "mnemonic_phrase")
+      %{address: "17sK9AinWc531hbd2NvY87HYGjLhov8W",1a065dabd5ab0da67a439cb99beaf6284a0cf9f8
         private_key: "6F1F227BF23C7EAB583279B299330B0535B68AE98A2ADD1BF0CB2C1E7E0E0EB6"
         public: "02EEF538AEDB61AAB3276639AEA01EF24A7AC1E467DA2BA57619DEE987F2626E68"}
   """
   @spec decrypt_wallet(String.t(), String.t(), String.t()) :: Map.t()
-  def decrypt_wallet(file_name, password, mnemonic_phrase) do
-    {:ok, encrypted_data} = File.read(file_name)
-    encryptor = generate_encryptor(password, mnemonic_phrase)
-    MessageEncryptor.decrypt_and_verify(encryptor, encrypted_data)
+  def decrypt_wallet(file_path, password, mnemonic_phrase) do
+    case File.read(file_path) do
+      {:ok, encrypted_data} ->
+        encryptor = generate_encryptor(password, mnemonic_phrase)
+        {:ok, MessageEncryptor.decrypt_and_verify(encryptor, encrypted_data)}
+      {:error, :enoent} ->
+        {:error, "The file does not exist."}
+      {:error, :eaccess} ->
+        {:error, "Missing permision for reading the file,
+        or for searching one of the parent directories."}
+      {:error, :eisdir} ->
+        {:error, "The named file is a directory."}
+      {:error, :enotdir} ->
+        {:error, "A component of the file name is not a directory."}
+      {:error, :enomem} ->
+        {:error, "There is not enough memory for the contents of the file."}
+    end
   end
 
   @doc """

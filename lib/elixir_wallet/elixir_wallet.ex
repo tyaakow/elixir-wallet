@@ -45,7 +45,7 @@ defmodule Wallet do
         "mnemonic" <> password,
         [iterations: 2048, digest: :sha512])
 
-    address =  KeyPair.generate_wallet_address(public)
+    address = KeyPair.generate_wallet_address(public)
     data = %{private_key: private, public: public, address: address}
     encrypted = WalletCrypto.encrypt_wallet(data, password, to_string(mnemonic_phrase))
     IO.binwrite(file, encrypted)
