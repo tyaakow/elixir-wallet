@@ -1,4 +1,6 @@
 defmodule Wallet do
+  require Logger
+
   @moduledoc """
   This module is used for creation of the Wallet file. To inspect it use
   WalletCrypto.decrypt_wallet("wallet_file_name", "password", "mnemonic_phrase")
@@ -20,9 +22,9 @@ defmodule Wallet do
     mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes)
     create_wallet_file(mnemonic_phrase, password)
 
-    IO.puts("Your wallet was created.
-      \nUse the following phrase as additional authentication when accessing your wallet:
-      \n#{mnemonic_phrase}")
+    Logger.info("Your wallet was created.")
+    Logger.info("Use the following phrase as additional authentication when accessing your wallet:")
+    Logger.info(mnemonic_phrase)
   end
 
   @doc """
@@ -33,7 +35,7 @@ defmodule Wallet do
   def import_wallet(mnemonic_phrase, password \\ "") do
 
     create_wallet_file(mnemonic_phrase, password)
-    IO.puts("You have successfully imported a wallet")
+    Logger.info("You have successfully imported a wallet")
   end
 
   defp create_wallet_file(mnemonic_phrase, password) do
