@@ -1,4 +1,6 @@
 defmodule Wallet do
+  require Logger
+
   @moduledoc """
   This module is used for creation of the Wallet file. To inspect it use
   WalletCrypto.decrypt_wallet("wallet_file_name", "password", "mnemonic_phrase")
@@ -15,24 +17,25 @@ defmodule Wallet do
       sand trip update spring
   """
   @spec create_wallet(String.t()) :: String.t()
-  def create_wallet(password) do
+  def create_wallet(password \\ "") do
 
     mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes)
     create_wallet_file(mnemonic_phrase, password)
 
-    IO.puts("Your wallet was created.
-      \nUse the following phrase as additional authentication when accessing your wallet:
-      \n#{mnemonic_phrase}")
+    Logger.info("Your wallet was created.")
+    Logger.info("Use the following phrase as additional authentication when accessing your wallet:")
+    Logger.info(mnemonic_phrase)
   end
 
   @doc """
   Creates a wallet file from an existing mnemonic_phrase and password
+  If the wallet was not password protected, just pass the mnemonic_phrase
   """
   @spec import_wallet(String.t(), String.t()) :: String.t()
-  def import_wallet(mnemonic_phrase, password) do
+  def import_wallet(mnemonic_phrase, password \\ "") do
 
     create_wallet_file(mnemonic_phrase, password)
-    IO.puts("You have successfully imported a wallet")
+    Logger.info("You have successfully imported a wallet")
   end
 
   defp create_wallet_file(mnemonic_phrase, password) do
@@ -40,8 +43,13 @@ defmodule Wallet do
     file = "wallet--#{year}-#{month}-#{day}-#{hours}-#{minutes}-#{seconds}"
     {:ok, file} = File.open(file, [:write])
 
+    concat_mnemonic =
+      mnemonic_phrase
+      |> String.split(" ")
+      |> Enum.join()
+
     {private, public, _} =
-      KeyPair.generate_root_seed(mnemonic_phrase,
+      KeyPair.generate_root_seed(concat_mnemonic,
         "mnemonic" <> password,
         [iterations: 2048, digest: :sha512])
 

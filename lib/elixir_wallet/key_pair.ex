@@ -9,26 +9,49 @@ defmodule KeyPair do
   ## Example
       iex> KeyPair.generate_root_seed("mnemonic", "pass", [iterations: 2048, digest: :sha512])
 
-      %{address: '177Phoj5VzFGNH7JUPLKD7pVauJEUzwEky',
-      private_key: "CF92B127F1A8F2931261830CE8AA79E6E35AA2AB6E97A5FED2D5EB459744A762",
-      public: "02A87C141516843F07C37EE3AE4F1C6A56E5A212076F4756F85122AE42B2FD8062"}
+      %{"6C055755B1F6E97DFFC1C40C1BD4919C48938B211139C12C3F04A7F011D8DD20",
+      "03C6D13F979E118C97029A3F210AA207CA6695908BA814271472ED1775E4FFBC75",
+      <<18, 216, 49, 31, 0, 27, 92, 61, 81, 76, 17, 212, 106, 24, 176, 124, 144, 111,
+      182, 17, 157, 236, 54, 168, 91, 92, 99, 234, 76, 232, 20, 169>>
+      }
   """
   @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()
-  def generate_root_seed(mnemonic, password, opts \\ []) do
+  def generate_root_seed(mnemonic, password \\ "", opts \\ []) do
     generate_master_keys(KeyGenerator.generate(mnemonic, password, opts))
   end
 
   def generate_master_keys(seed) do
-    <<private_int::size(256), chain_code::binary>> = seed
-    private_key = <<private_int::256>> |> Base.encode16()
+    private_key_dec = generate_master_private_key(seed)
+    public_key_bin = generate_master_public_key(private_key_dec)
+    chain_code = generate_chain_code(seed)
 
-    {public_bin, _} = :crypto.generate_key(:ecdh, :secp256k1, private_int)
-    public_short = public_bin |> serialize()
+    private_key_bin = <<private_key_dec::size(256)>>
 
-    child_private_key_derivation(private_int, chain_code, 1)
-    child_public_key_derivation(public_bin, chain_code, 1)
+    #child_private_key_derivation(private_key_int, chain_code, 1)
+    #child_public_key_derivation(public_key_bin, chain_code, 1)
 
-    {private_key, public_short, chain_code}
+    private_key_hex = private_key_bin |> Base.encode16()
+    public_key_hex = public_key_bin |> Base.encode16()
+
+    {private_key_hex, public_key_hex, chain_code}
+  end
+
+  def generate_master_private_key(seed) do
+    <<private_key::size(256), _::binary>> =
+      :crypto.hmac(:sha512, "Bitcoin seed", seed)
+    private_key
+  end
+
+  def generate_chain_code(seed) do
+    <<_::size(256), chain_code::binary>> =
+      :crypto.hmac(:sha512, "Bitcoin seed", seed)
+    chain_code
+  end
+
+  def generate_master_public_key(private_key_dec) do
+    {public_key, _} =
+      :crypto.generate_key(:ecdh, :secp256k1, private_key_dec)
+    public_key
   end
 
   @doc """
@@ -45,8 +68,7 @@ defmodule KeyPair do
       <<86, 58, 152, 23, 56, 221, 230, 127, 46, 28, 224, 1, 196, 29, 147, 26, 60, 87,
       154, 143, 242, 166, 99, 249, 89, 18, 116, 169, 175, 233, 182, 13>>}
   """
-  @spec child_private_key_derivation(Integer.t(), Binary.t(), Integer.t())
-  :: {:ok, child_private_key :: Integer.t(), child_chain_code :: Binary.t()}
+  #@spec child_private_key_derivation(Integer.t(), Binary.t(), Integer.t()) :: Tuple.t()
   def child_private_key_derivation(parent_private_key, parent_chain_code, index) do
     serialized_private_key = <<parent_private_key::size(256)>>
     serialized_index = <<index::size(32)>>
@@ -58,7 +80,8 @@ defmodule KeyPair do
       |> Base.decode16()
       |> elem(1)
 
-    child_type = if index >= :math.pow(2, 31) do
+    <<child_type::size(256), child_chain_code::binary>> =
+    if index >= :math.pow(2, 31) do
       # Hardned child
       # Note: The 0x00 pads the private key to make it 33 bytes long
       :crypto.hmac(:sha512,
@@ -71,11 +94,9 @@ defmodule KeyPair do
         serialized_point <> serialized_index)
     end
 
-    # Split into two 32-byte sequances and take the left one
-    <<i_left::size(256), child_chain_code::binary>> = child_type
-
-    base = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-    child_private_key =  i_left + rem(parent_private_key, base)
+    # Integers modulo the order of the curve (referred to as n)
+    n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    child_private_key =  child_type + rem(parent_private_key, n)
 
     {:ok, child_private_key, child_chain_code}
   end
@@ -104,7 +125,8 @@ defmodule KeyPair do
       |> Base.decode16()
       |> elem(1)
 
-    child_type = if index >= :math.pow(2, 31) do
+    <<child_type::size(256), child_chain_code::binary>> =
+    if index >= :math.pow(2, 31) do
       # Hardned child
       raise("Hardened child")
     else
@@ -114,10 +136,7 @@ defmodule KeyPair do
           serialized_public_key  <> serialized_index)
     end
 
-    # Split into two 32-byte sequances and take the left one
-    <<i_left::size(256), child_chain_code::binary>> = child_type
-
-    {point, _} = :crypto.generate_key(:ecdh, :secp256k1, i_left)
+    {point, _} = :crypto.generate_key(:ecdh, :secp256k1, child_type)
 
     # Convert to integer value
     point_int =
@@ -157,17 +176,20 @@ defmodule KeyPair do
       :crypto.hash(:ripemd160, public_sha256)
       |> Base.encode16()
 
+    # Network ID bytes:
+    # Main Network = "0x00"
+    # Test Network = "0x6F"
+    # Namecoin Net = "0x34"
     public_add_netbytes = "00" <> public_ripemd160
 
-    public_sha256_netbytes = :crypto.hash(:sha256,
-      public_add_netbytes
-      |> Base.decode16()
-      |> elem(1))
-
-    public_sha256_netbytes_2 = :crypto.hash(:sha256, public_sha256_netbytes)
+    checksum = :crypto.hash(:sha256,
+      :crypto.hash(:sha256,
+        public_add_netbytes
+        |> Base.decode16()
+        |> elem(1)))
 
     slice_four_bytes =
-      public_sha256_netbytes_2
+      checksum
       |> Base.encode16()
       |> String.slice(0..7)
 
@@ -177,7 +199,7 @@ defmodule KeyPair do
     |> Base58Check.encode58()
   end
 
-  defp serialize(point) do
+  def serialize(point) do
     first_half =
       point
       |> Base.encode16()

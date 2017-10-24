@@ -8,14 +8,15 @@ defmodule WalletCrypto do
   @doc """
   Decripts the data of the wallet file
   using the password and mnemonic_phrase as encriptors
+  If the wallet is not password protected, just skip the password
   ## Example
-      iex> WalletCrypto.decrypt_wallet("file_path", "pass", "mnemonic_phrase")
+      iex> WalletCrypto.decrypt_wallet("file_path", "mnemonic_phrase", "pass")
       %{address: "17sK9AinWc531hbd2NvY87HYGjLhov8W",1a065dabd5ab0da67a439cb99beaf6284a0cf9f8
         private_key: "6F1F227BF23C7EAB583279B299330B0535B68AE98A2ADD1BF0CB2C1E7E0E0EB6"
         public: "02EEF538AEDB61AAB3276639AEA01EF24A7AC1E467DA2BA57619DEE987F2626E68"}
   """
   @spec decrypt_wallet(String.t(), String.t(), String.t()) :: Map.t()
-  def decrypt_wallet(file_path, password, mnemonic_phrase) do
+  def decrypt_wallet(file_path, mnemonic_phrase, password \\ "") do
     case File.read(file_path) do
       {:ok, encrypted_data} ->
         encryptor = generate_encryptor(password, mnemonic_phrase)
