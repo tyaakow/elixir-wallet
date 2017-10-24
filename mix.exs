@@ -22,7 +22,7 @@ defmodule ElixirWallet.Mixfile do
   defp deps do
     [
       {:cryptex, "~> 0.0.1"},
-      {:base58, github: "titan098/erl-base58"},
+      {:base58check, github: "gspasov/base58check"},
       {:key_generator, github: "scrogson/key_generator"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},

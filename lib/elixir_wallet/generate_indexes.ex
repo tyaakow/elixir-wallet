@@ -10,7 +10,7 @@ defmodule GenerateIndexes do
       iex> GenerateIndexes.generate_indexes
       [674, 1135, 630, 1012, 624, 1428, 481, 1666, 693, 534, 1933, 628]
   """
-  @spec generate_indexes() :: list()
+  @spec generate_indexes() :: List.t()
   def generate_indexes() do
     entropy = :crypto.strong_rand_bytes(16)
     checksum_length = (byte_size(entropy) * 8) / 32 |> trunc()
@@ -38,7 +38,7 @@ defmodule GenerateIndexes do
       iex> GenerateIndexes.split_bits_into_groups("1011100011010100110110" <> "1011001011")
       ["10100110110", "10111000110"]
   """
-  @spec split_bits_into_groups(String.t()) :: list()
+  @spec split_bits_into_groups(String.t()) :: List.t()
   def split_bits_into_groups(bits) do
     Regex.scan(~r/(.{1,11})/, bits)
     |> Enum.map(fn(elem) -> List.first(elem) end)
@@ -53,7 +53,7 @@ defmodule GenerateIndexes do
       iex> GenerateIndexes.parse_binary_list(["10100110110", "10111000110"])
       [1478, 1334]
   """
-  @spec parse_binary_list(List.t()) :: list()
+  @spec parse_binary_list(List.t()) :: List.t()
   def parse_binary_list(list) do
     Enum.map(list, fn(binary) ->
       binary_to_byte(binary)
