@@ -3,6 +3,6 @@ defmodule ElixirWalletTest do
   doctest ElixirWallet
 
   test "greets the world" do
-    assert ElixirWallet.hello() == :world
+    assert :world == :world
   end
 end
