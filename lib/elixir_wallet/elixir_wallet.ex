@@ -20,7 +20,7 @@ defmodule Wallet do
   def create_wallet(password \\ "") do
 
     mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes)
-    create_wallet_file(mnemonic_phrase, password)
+    save_wallet_file(mnemonic_phrase, password)
 
     Logger.info("Your wallet was created.")
     Logger.info("Use the following phrase as additional authentication when accessing your wallet:")
@@ -34,28 +34,36 @@ defmodule Wallet do
   @spec import_wallet(String.t(), String.t()) :: String.t()
   def import_wallet(mnemonic_phrase, password \\ "") do
 
-    create_wallet_file(mnemonic_phrase, password)
+    save_wallet_file(mnemonic_phrase, password)
     Logger.info("You have successfully imported a wallet")
   end
 
-  defp create_wallet_file(mnemonic_phrase, password) do
+  def load_wallet_file(file_path, password) do
+    case File.read(file_path) do
+      {:ok, encrypted_data} ->
+        mnemonic = Cypher.decrypt(encrypted_data, password)
+        {:ok, "Your mnemonic phrase is: #{mnemonic}"}
+      {:error, :enoent} ->
+        {:error, "The file does not exist."}
+      {:error, :eaccess} ->
+        {:error, "Missing permision for reading the file,
+        or for searching one of the parent directories."}
+      {:error, :eisdir} ->
+        {:error, "The named file is a directory."}
+      {:error, :enotdir} ->
+        {:error, "A component of the file name is not a directory."}
+      {:error, :enomem} ->
+        {:error, "There is not enough memory for the contents of the file."}
+    end
+  end
+
+  defp save_wallet_file(mnemonic_phrase, password) do
     {{year, month, day}, {hours, minutes, seconds}} = :calendar.local_time()
     file = "wallet--#{year}-#{month}-#{day}-#{hours}-#{minutes}-#{seconds}"
     {:ok, file} = File.open(file, [:write])
 
-    concat_mnemonic =
-      mnemonic_phrase
-      |> String.split(" ")
-      |> Enum.join()
-
-    {private, public, _} =
-      KeyPair.generate_root_seed(concat_mnemonic,
-        "mnemonic" <> password,
-        [iterations: 2048, digest: :sha512])
-
-    address = KeyPair.generate_wallet_address(public)
-    data = %{private_key: private, public: public, address: address}
-    encrypted = WalletCrypto.encrypt_wallet(data, password, to_string(mnemonic_phrase))
+    ## TODO: Get the password from the user
+    encrypted = Cypher.encrypt(mnemonic_phrase, "password")
     IO.binwrite(file, encrypted)
     File.close(file)
   end
