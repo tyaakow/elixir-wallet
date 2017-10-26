@@ -21,7 +21,6 @@ defmodule ElixirWallet.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:cryptex, "~> 0.0.1"},
       {:base58check, github: "gspasov/base58check"},
       {:key_generator, github: "scrogson/key_generator"}
       # {:dep_from_hexpm, "~> 0.3.0"},
