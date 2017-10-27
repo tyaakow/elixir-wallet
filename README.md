@@ -20,9 +20,8 @@ Further info in the [bitcoinbook](https://github.com/bitcoinbook/bitcoinbook/blo
 First we create a seed from the already generated mnemonic phrase
 
 ```elixir
-seed = KeyGenerator.generate(mnemonic, pass_phrase, opts) 
-``` 
-where for options we add the following: [iterations: 2048, digest: :sha512]
+seed = SeedGenerator.generate(mnemonic, pass_phrase, opts)
+```
 
 A user may decide to protect their mnemonic with a passphrase. If a passphrase is not present, an empty string "" is used instead.
 
@@ -32,7 +31,7 @@ This seed is later used to generate deterministic wallets using [BIP-0032](https
 
 Further info in the [bitcoinbook](https://github.com/bitcoinbook/bitcoinbook/blob/second_edition/ch05.asciidoc#from-mnemonic-to-seed)
 
-  
+
 ## Creating HD Wallet from the Seed
 Following the [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
 
@@ -73,7 +72,7 @@ master_private_key = KeyPair.generate_master_private_key(seed)
 
 ### Creating master Public key
 
-	
+
 The public key is generated using the crypto module from [erlang crypto module](http://erlang.org/doc/man/crypto.html#generate_key-2)
 ```erlang
 :crypto.generate_key(Type, Params, PrivKeyIn) -> {PublicKey, PrivKeyOut}
@@ -118,4 +117,3 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/elixir_wallet](https://hexdocs.pm/elixir_wallet).
-

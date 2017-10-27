@@ -10,7 +10,7 @@ defmodule KeyPair do
   Generating a root seed from given mnemonic phrase
   to further ensure uniqueness of master keys.
   ## Example
-      iex> KeyPair.generate_root_seed("mnemonic", "pass", [iterations: 2048, digest: :sha512])
+      iex> KeyPair.generate_root_seed("mnemonic", "pass")
 
       %{"6C055755B1F6E97DFFC1C40C1BD4919C48938B211139C12C3F04A7F011D8DD20",
       "03C6D13F979E118C97029A3F210AA207CA6695908BA814271472ED1775E4FFBC75",
@@ -20,7 +20,7 @@ defmodule KeyPair do
   """
   @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()
   def generate_root_seed(mnemonic, password \\ "", opts \\ []) do
-    generate_master_keys(KeyGenerator.generate(mnemonic, password, opts))
+    generate_master_keys(SeedGenerator.generate(mnemonic, password, opts))
   end
 
   def generate_master_keys(seed) do
