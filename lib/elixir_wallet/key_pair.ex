@@ -17,7 +17,7 @@ defmodule KeyPair do
   """
   @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()
   def generate_root_seed(mnemonic, password \\ "", opts \\ []) do
-    generate_master_keys(KeyGenerator.generate(mnemonic, password, opts))
+    generate_master_keys(SeedGenerator.generate(mnemonic, password, opts))
   end
 
   def generate_master_keys(seed) do
