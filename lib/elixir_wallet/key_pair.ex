@@ -3,6 +3,9 @@ defmodule KeyPair do
   Module for generating master public and private key
   """
 
+  # Integers modulo the order of the curve (referred to as n)
+  @n 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
   @doc """
   Generating a root seed from given mnemonic phrase
   to further ensure uniqueness of master keys.
@@ -39,7 +42,12 @@ defmodule KeyPair do
   def generate_master_private_key(seed) do
     <<private_key::size(256), _::binary>> =
       :crypto.hmac(:sha512, "Bitcoin seed", seed)
-    private_key
+
+	if private_key != 0 or private_key >= @n do
+        private_key
+    else
+    	raise("Key Generation error")	
+    end
   end
 
   def generate_chain_code(seed) do
@@ -94,9 +102,7 @@ defmodule KeyPair do
         serialized_point <> serialized_index)
     end
 
-    # Integers modulo the order of the curve (referred to as n)
-    n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-    child_private_key =  child_type + rem(parent_private_key, n)
+    child_private_key =  child_type + rem(parent_private_key, @n)
 
     {:ok, child_private_key, child_chain_code}
   end
@@ -225,3 +231,4 @@ defmodule KeyPair do
     end
   end
 end
+
