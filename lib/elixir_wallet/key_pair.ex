@@ -43,8 +43,8 @@ defmodule KeyPair do
     <<private_key::size(256), _::binary>> =
       :crypto.hmac(:sha512, "Bitcoin seed", seed)
 
-	if private_key != 0 or private_key >= @n do
-        private_key
+	  if private_key != 0 or private_key >= @n do
+      private_key
     else
     	raise("Key Generation error")	
     end
