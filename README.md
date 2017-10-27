@@ -20,9 +20,8 @@ Further info in the [bitcoinbook](https://github.com/bitcoinbook/bitcoinbook/blo
 First we create a seed from the already generated mnemonic phrase
 
 ```elixir
-seed = SeedGenerator.generate(mnemonic, pass_phrase, opts) 
+seed = SeedGenerator.generate(mnemonic, pass_phrase, opts)
 ```
-where for options we add the following: [iterations: 2048, digest: :sha512]
 
 A user may decide to protect their mnemonic with a passphrase. If a passphrase is not present, an empty string "" is used instead.
 
