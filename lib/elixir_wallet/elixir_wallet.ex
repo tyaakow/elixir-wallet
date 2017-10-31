@@ -75,13 +75,11 @@ defmodule Wallet do
    [_,mnemonic] = String.split(mnemonic_string, ": ")
     
    KeyPair.generate_root_seed(mnemonic)
-   |>
-   elem(1)
+   |> elem(1)
   end  
   
   def get_address(file_path, password) do
    get_public_key(file_path, password)
-   |>
-   KeyPair.generate_wallet_address() 
+   |> KeyPair.generate_wallet_address() 
   end
 end
