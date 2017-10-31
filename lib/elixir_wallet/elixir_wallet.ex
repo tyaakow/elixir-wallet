@@ -25,6 +25,7 @@ defmodule Wallet do
     Logger.info("Your wallet was created.")
     Logger.info("Use the following phrase as additional authentication when accessing your wallet:")
     Logger.info(mnemonic_phrase)
+	IO.inspect mnemonic_phrase
   end
 
   @doc """
@@ -66,5 +67,21 @@ defmodule Wallet do
     encrypted = Cypher.encrypt(mnemonic_phrase, "password")
     IO.binwrite(file, encrypted)
     File.close(file)
+  end
+
+  def get_public_key(file_path, password) do
+   {_, mnemonic_string} = load_wallet_file(file_path, password)
+  
+   [_,mnemonic] = String.split(mnemonic_string, ": ")
+    
+   KeyPair.generate_root_seed(mnemonic)
+   |>
+   elem(1)
+  end  
+  
+  def get_address(file_path, password) do
+   get_public_key(file_path, password)
+   |>
+   KeyPair.generate_wallet_address() 
   end
 end

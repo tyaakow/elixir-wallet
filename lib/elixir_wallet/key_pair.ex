@@ -166,7 +166,7 @@ defmodule KeyPair do
   end
 
   @doc """
-  Generates wallet address from a given piblic key
+  Generates wallet address from a given public key
   ## Example
       iex> KeyPair.generate_wallet_address("03AE1B3F8386C6F8B08745E290DA4F7B1B6EBD2287C2505567A2A311BA09EE53F3")
       '1C7RcPXiqwnaJgfvLmoicS3AaBGYyKbiW8'
