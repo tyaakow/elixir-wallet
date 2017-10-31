@@ -25,7 +25,6 @@ defmodule Wallet do
     Logger.info("Your wallet was created.")
     Logger.info("Use the following phrase as additional authentication when accessing your wallet:")
     Logger.info(mnemonic_phrase)
-	IO.inspect mnemonic_phrase
   end
 
   @doc """
