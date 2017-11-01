@@ -50,7 +50,7 @@ defmodule Wallet do
     case File.read(file_path) do
       {:ok, encrypted_data} ->
         mnemonic = Cypher.decrypt(encrypted_data, password)
-		{:ok, mnemonic}
+	{:ok, mnemonic}
       {:error, :enoent} ->
         {:error, "The file does not exist."}
       {:error, :eaccess} ->
