@@ -67,4 +67,32 @@ defmodule Wallet do
     IO.binwrite(file, encrypted)
     File.close(file)
   end
+
+  @doc """
+  Gets the public key
+  ## Examples
+      iex> KeyPair.get_public_key("wallet--2017-10-31-14-54-39", "password")
+	   "04187ACD56365459C0948953DD0D36A93E57A4C78C6E04E1E9DB10EA2C89FF2701DCC1AFB2C30F09ACE265EA11DAFE7E40591182F4EC3E7BB535305551D2A374CB"
+  """
+  @spec get_public_key(String.t(), String.t()) :: String.t()
+  def get_public_key(file_path, password) do
+   {_, mnemonic_string} = load_wallet_file(file_path, password)
+  
+   [_,mnemonic] = String.split(mnemonic_string, ": ")
+    
+   KeyPair.generate_root_seed(mnemonic)
+   |> elem(1)
+  end  
+  
+  @doc """
+  Gets the wallet address
+  ## Examples
+      iex> KeyPair.get_address("wallet--2017-10-31-14-54-39", "password")
+	   "1NM51tw1MixFCe64g6ExhCEXnowEGrQ2DE"
+  """
+  @spec get_address(String.t(), String.t()) :: String.t()
+  def get_address(file_path, password) do
+   get_public_key(file_path, password)
+   |> KeyPair.generate_wallet_address() 
+  end
 end
