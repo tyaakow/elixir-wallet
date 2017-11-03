@@ -6,6 +6,20 @@ defmodule KeyPair do
   # Integers modulo the order of the curve (referred to as n)
   @n 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
+  # Network versions
+  @mainnet_ext_priv_key_version 0x0488ADE4
+  @mainnet_ext_pub_key_version  0x0488B21E
+  @testnet_ext_priv_key_version 0x04358394
+  @testnet_ext_pub_key_version  0x043587CF
+
+  # Mersenne number / TODO: type what it is used for
+  @mersenne_prime 2147483647
+
+  # Default depth, child_num and fingerprint values, needed for extended keys
+  @depth 0
+  @child_num 0
+  @fingerprint 0
+
   @doc """
   Generating a root seed from given mnemonic phrase
   to further ensure uniqueness of master keys.
@@ -43,10 +57,10 @@ defmodule KeyPair do
     <<private_key::size(256), _::binary>> =
       :crypto.hmac(:sha512, "Bitcoin seed", seed)
 
-	if private_key != 0 or private_key >= @n do
+    if private_key != 0 or private_key >= @n do
       private_key
     else
-    	raise("Key Generation error")	
+      raise("Key Generation error")
     end
   end
 
@@ -62,6 +76,93 @@ defmodule KeyPair do
     public_key
   end
 
+  def derive_extend_pub_key(seed, network \\ :mainnet) do
+    pub_key_ser =
+      generate_master_private_key(seed)
+      |> generate_master_public_key()
+      |> Base.encode16()
+      |> serialize()
+    key = %{network: network,
+            key_type: :public,
+            key_ser: pub_key_ser,
+            chain_code: generate_chain_code(seed),
+            depth: @depth,
+            child_num: @child_num,
+            f_print: @fingerprint}
+    build_ext_key(key)
+  end
+
+  def derive_extend_priv_key(seed, network \\ :mainnet) do
+    priv_key_ser = <<0x00::size(8),  generate_master_private_key(seed)::size(256)>>
+    key = %{network: network,
+            key_type: :private,
+            key_ser: priv_key_ser,
+            chain_code: generate_chain_code(seed),
+            depth: @depth,
+            child_num: @child_num,
+            f_print: @fingerprint}
+    build_ext_key(key)
+  end
+
+  defp build_ext_key(%{network: :mainnet, key_type: :private} = key) do
+    build_ext_key(key, @mainnet_ext_priv_key_version)
+  end
+  defp build_ext_key(%{network: :mainnet, key_type: :public} = key) do
+    build_ext_key(key, @mainnet_ext_pub_key_version)
+  end
+  defp build_ext_key(%{network: :testnet, key_type: :private} = key) do
+    build_ext_key(key, @testnet_ext_priv_key_version)
+  end
+  defp build_ext_key(%{network: :testnet, key_type: :public} = key) do
+    build_ext_key(key, @testnet_ext_pub_key_version)
+  end
+  defp build_ext_key(key, version) do
+    build_ext_key(version,
+      key.depth,
+      key.f_print,
+      key.child_num,
+      key.chain_code,
+      key.key_ser)
+  end
+  defp build_ext_key(@mainnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@mainnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key)
+  end
+  defp build_ext_key(@mainnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@mainnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key)
+  end
+  defp build_ext_key(@testnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@testnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key)
+  end
+  defp build_ext_key(@testnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@testnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key)
+  end
+
+  defp concat(version, depth, f_print, c_num, chain_code, key) do
+    add_checksum(<<version::size(32),
+      depth::size(8),
+      f_print::size(32),
+      c_num::size(32),
+      chain_code::binary,
+      key::binary>>)
+  end
+
+  defp add_checksum(data_bin) do
+    {double_sha256_dec, _} =
+      :crypto.hash(:sha256, :crypto.hash(:sha256, data_bin))
+      |> Base.encode16()
+      |> Integer.parse(16)
+
+    checksum = <<double_sha256_dec::size(32)>>
+
+    extended_key = data_bin <> checksum
+    encode(extended_key)
+  end
+
+  def encode(hex) do
+    Base58Check.encode58(hex)
+  end
+
+
   @doc """
   Derives a Child private key from the Parent private key,
   the Parent chain code and an Index.
@@ -76,7 +177,7 @@ defmodule KeyPair do
       <<86, 58, 152, 23, 56, 221, 230, 127, 46, 28, 224, 1, 196, 29, 147, 26, 60, 87,
       154, 143, 242, 166, 99, 249, 89, 18, 116, 169, 175, 233, 182, 13>>}
   """
-  #@spec child_private_key_derivation(Integer.t(), Binary.t(), Integer.t()) :: Tuple.t()
+  @spec child_private_key_derivation(Integer.t(), Binary.t(), Integer.t()) :: Tuple.t()
   def child_private_key_derivation(parent_private_key, parent_chain_code, index) do
     serialized_private_key = <<parent_private_key::size(256)>>
     serialized_index = <<index::size(32)>>
@@ -231,4 +332,3 @@ defmodule KeyPair do
     end
   end
 end
-
