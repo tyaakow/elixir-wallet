@@ -6,6 +6,20 @@ defmodule KeyPair do
   # Integers modulo the order of the curve (referred to as n)
   @n 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
+  # Network versions
+  @mainnet_ext_priv_key_version 0x0488ADE4
+  @mainnet_ext_pub_key_version  0x0488B21E
+  @testnet_ext_priv_key_version 0x04358394
+  @testnet_ext_pub_key_version  0x043587CF
+
+  # Mersenne number / TODO: type what it is used for
+  @mersenne_prime 2147483647
+
+  # Default depth, child_num and fingerprint values, needed for extended keys
+  @depth 0
+  @child_num 0
+  @fingerprint 0
+
   @doc """
   Generating a root seed from given mnemonic phrase
   to further ensure uniqueness of master keys.
@@ -24,14 +38,9 @@ defmodule KeyPair do
   end
 
   def generate_master_keys(seed) do
-    private_key_dec = generate_master_private_key(seed)
-    public_key_bin = generate_master_public_key(private_key_dec)
+    private_key_bin = generate_master_private_key(seed)
+    public_key_bin = generate_master_public_key(private_key_bin)
     chain_code = generate_chain_code(seed)
-
-    private_key_bin = <<private_key_dec::size(256)>>
-
-    #child_private_key_derivation(private_key_int, chain_code, 1)
-    #child_public_key_derivation(public_key_bin, chain_code, 1)
 
     private_key_hex = private_key_bin |> Base.encode16()
     public_key_hex = public_key_bin |> Base.encode16()
@@ -39,28 +48,157 @@ defmodule KeyPair do
     {private_key_hex, public_key_hex, chain_code}
   end
 
+  @doc """
+  Generates Master Private key from a given seed
+  ## Example
+      iex> KeyPair.generate_master_private_key(seed)
+      <<151, 43, 128, 234, 7, 64, 2, 5, 246, 177, 61, 95, 255, 74, 81, 153, 86, 29,
+      239, 10, 108, 166, 204, 112, 64, 109, 229, 173, 36, 71, 148, 12>>
+  """
+  @spec generate_master_private_key(String.t()) :: Binary.t()
   def generate_master_private_key(seed) do
-    <<private_key::size(256), _::binary>> =
+    <<private_key::binary-32, _::binary>> =
       :crypto.hmac(:sha512, "Bitcoin seed", seed)
 
-	if private_key != 0 or private_key >= @n do
+    if private_key != 0 or private_key >= @n do
       private_key
     else
-    	raise("Key Generation error")	
+      raise("Key Generation error")
     end
   end
 
+  @doc """
+  Generates Master chain_code from a given seed
+  ## Example
+     iex> KeyPair.generate_chain_code(seed)
+     <<67, 167, 253, 44, 27, 74, 166, 183, 104, 36, 28, 188, 67, 240, 121, 58, 216,
+     119, 74, 55, 209, 147, 185, 140, 59, 235, 107, 66, 128, 219, 120, 99>>
+  """
+  @spec generate_chain_code(String.t()) :: Binary.t()
   def generate_chain_code(seed) do
-    <<_::size(256), chain_code::binary>> =
+    <<_::binary-32, chain_code::binary>> =
       :crypto.hmac(:sha512, "Bitcoin seed", seed)
     chain_code
   end
 
-  def generate_master_public_key(private_key_dec) do
+
+  @doc """
+  Generates Master Public key from a given private key
+  ## Example
+      iex>> KeyPair.generate_master_public_key(private_key_bin)
+      <<4, 65, 105, 235, 146, 231, 187, 34, 143, 142, 44, 32, 142, 66, 87, 92, 38, 30,
+      180, 56, 200, 2, 237, 56, 42, 88, 77, 74, 0, 77, 235, 17, 217, 199, 70, 191,
+      237, 30, 191, 249, 56, 198, 25, 138, 229, 249, 62, 16, 88, 210, ...>>
+  """
+  def generate_master_public_key(private_key_bin) do
     {public_key, _} =
-      :crypto.generate_key(:ecdh, :secp256k1, private_key_dec)
+      :crypto.generate_key(:ecdh, :secp256k1, private_key_bin)
     public_key
   end
+
+  @doc """
+  Derives an Extended Public key from a given seed and network
+  If a network is not specified, :mainnet will be used
+  ## Example
+      iex> KeyPair.derive_extend_pub_key(seed)
+      "xpub661MyMwAqRbcEicePgnmzt4kZxe4LSejJB5hN2xzQb3BVgBQXCnSDe869u2C66h97g3QiSmoPL2XfhLQ7ro9rjGncqrvzuimLY6T3Rrco2s"
+
+      iex> KeyPair.derive_extend_pub_key(seed, :testnet)
+      "tpubD6NzVbkrYhZ4WWoVqsmsCoQ7u5jiKq9nqofzib28kVo5Exr7bRdXN5nvPw6ycbeNuaaKL2HfvRraMsq1WiePkAj5gScEgSNzvVgroTkVymv"
+  """
+  @spec derive_extend_pub_key(String.t(), tuple()) :: String.t()
+  def derive_extend_pub_key(seed_hex, network \\ :mainnet) do
+    seed_bin = Base.decode16!(seed_hex, case: :mixed)
+    pub_key_ser =
+      generate_master_private_key(seed_bin)
+      |> generate_master_public_key()
+      |> serialize()
+      |> Base.decode16!()
+    key = %{network: network,
+            key_type: :public,
+            key_ser: pub_key_ser,
+            chain_code: generate_chain_code(seed_bin),
+            depth: @depth,
+            child_num: @child_num,
+            f_print: @fingerprint}
+    build_ext_key(key)
+  end
+
+  @doc """
+  Derives an Extended Private key from a given seed and network
+  If a network is not specified, :mainnet will be used
+  ## Example
+      iex> KeyPair.derive_extend_priv_key(seed)
+      "xprv9s21ZrQH143K2EYBHfFmdk821voZvyvsvxA6ZeZNrFWCcsrFyfUBfqocJdfZJYiSJxUQNVhjm36JXscMc4QcHhQsgBFq44zubmcoT9q4ptD"
+
+      iex> KeyPair.derive_extend_priv_key(seed, :testnet)
+      "tprv8ZgxMBicQKsPd3mhxE7GoPk1L4DnAVxtGW5DS4yqLDzgQUbLy2owBbB4DoqDJv6kgQ1BNbKVvPg6zjA6jGkZ6kgUCpU8iRixWsNDtmesuag"
+  """
+  @spec derive_extend_priv_key(String.t(), tuple()) :: String.t()
+  def derive_extend_priv_key(seed_hex, network \\ :mainnet) do
+    seed_bin = Base.decode16!(seed_hex, case: :mixed)
+    priv_key_ser = <<0x00::size(8), generate_master_private_key(seed_bin)::binary>>
+    key = %{network: network,
+            key_type: :private,
+            key_ser: priv_key_ser,
+            chain_code: generate_chain_code(seed_bin),
+            depth: @depth,
+            child_num: @child_num,
+            f_print: @fingerprint}
+    build_ext_key(key)
+  end
+
+  defp build_ext_key(%{network: :mainnet, key_type: :private} = key) do
+    build_ext_key(key, @mainnet_ext_priv_key_version)
+  end
+  defp build_ext_key(%{network: :mainnet, key_type: :public} = key) do
+    build_ext_key(key, @mainnet_ext_pub_key_version)
+  end
+  defp build_ext_key(%{network: :testnet, key_type: :private} = key) do
+    build_ext_key(key, @testnet_ext_priv_key_version)
+  end
+  defp build_ext_key(%{network: :testnet, key_type: :public} = key) do
+    build_ext_key(key, @testnet_ext_pub_key_version)
+  end
+  defp build_ext_key(key, version) do
+    build_ext_key(
+      version,
+      key.depth,
+      key.f_print,
+      key.child_num,
+      key.chain_code,
+      key.key_ser)
+  end
+  defp build_ext_key(@mainnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@mainnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key)
+  end
+  defp build_ext_key(@mainnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@mainnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key)
+  end
+  defp build_ext_key(@testnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@testnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key)
+  end
+  defp build_ext_key(@testnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key) do
+    concat(@testnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key)
+  end
+
+  defp concat(version, depth, f_print, c_num, chain_code, key) do
+    add_checksum(
+      <<version    :: size(32),
+        depth      :: size(8),
+        f_print    :: size(32),
+        c_num      :: size(32),
+        chain_code :: binary,
+        key        :: binary>>)
+  end
+
+  defp add_checksum(data_bin) do
+    double_hash = :crypto.hash(:sha256, :crypto.hash(:sha256, data_bin))
+    checksum = <<double_hash::binary-4>>
+    extended_key = data_bin <> checksum
+    Base58Check.encode58(extended_key)
+  end
+
 
   @doc """
   Derives a Child private key from the Parent private key,
@@ -76,7 +214,7 @@ defmodule KeyPair do
       <<86, 58, 152, 23, 56, 221, 230, 127, 46, 28, 224, 1, 196, 29, 147, 26, 60, 87,
       154, 143, 242, 166, 99, 249, 89, 18, 116, 169, 175, 233, 182, 13>>}
   """
-  #@spec child_private_key_derivation(Integer.t(), Binary.t(), Integer.t()) :: Tuple.t()
+  @spec child_private_key_derivation(integer(), binary(), integer()) :: tuple()
   def child_private_key_derivation(parent_private_key, parent_chain_code, index) do
     serialized_private_key = <<parent_private_key::size(256)>>
     serialized_index = <<index::size(32)>>
@@ -121,15 +259,14 @@ defmodule KeyPair do
       154, 143, 242, 166, 99, 249, 89, 18, 116, 169, 175, 233, 182, 13>>}
 
   """
-  @spec child_public_key_derivation(Binary.t(), Binary.t(), Integer.t())
-  :: {:ok, child_public_key :: Integer.t(), child_chain_code :: Binary.t()}
+  @spec child_public_key_derivation(binary(), binary(), integer())
+  :: {:ok, child_public_key :: integer(), child_chain_code :: binary()}
   def child_public_key_derivation(parent_public_key, parent_chain_code, index) do
     serialized_index = <<index::size(32)>>
     serialized_public_key =
       parent_public_key
       |> serialize()
-      |> Base.decode16()
-      |> elem(1)
+      |> Base.decode16!()
 
     <<child_type::size(256), child_chain_code::binary>> =
     if index >= :math.pow(2, 31) do
@@ -171,37 +308,24 @@ defmodule KeyPair do
       iex> KeyPair.generate_wallet_address("03AE1B3F8386C6F8B08745E290DA4F7B1B6EBD2287C2505567A2A311BA09EE53F3")
       '1C7RcPXiqwnaJgfvLmoicS3AaBGYyKbiW8'
   """
-  @spec generate_wallet_address(String.t()) :: char
+  @spec generate_wallet_address(String.t()) :: String.t()
   def generate_wallet_address(public_key) do
-    public_sha256 = :crypto.hash(:sha256,
-      public_key
-      |> Base.decode16()
-      |> elem(1))
+    public_sha256 = :crypto.hash(:sha256, Base.decode16!(public_key))
 
-    public_ripemd160 =
-      :crypto.hash(:ripemd160, public_sha256)
-      |> Base.encode16()
+    public_ripemd160 = :crypto.hash(:ripemd160, public_sha256)
 
     # Network ID bytes:
     # Main Network = "0x00"
     # Test Network = "0x6F"
     # Namecoin Net = "0x34"
-    public_add_netbytes = "00" <> public_ripemd160
+    public_add_netbytes = <<0x00::size(8), public_ripemd160::binary>>
 
     checksum = :crypto.hash(:sha256,
-      :crypto.hash(:sha256,
-        public_add_netbytes
-        |> Base.decode16()
-        |> elem(1)))
+      :crypto.hash(:sha256, public_add_netbytes))
 
-    slice_four_bytes =
-      checksum
-      |> Base.encode16()
-      |> String.slice(0..7)
+    checksum_32bits = <<checksum::binary-4>>
 
-    public_add_netbytes <> slice_four_bytes
-    |> Base.decode16()
-    |> elem(1)
+    public_add_netbytes <> checksum_32bits
     |> Base58Check.encode58()
   end
 
@@ -231,4 +355,3 @@ defmodule KeyPair do
     end
   end
 end
-

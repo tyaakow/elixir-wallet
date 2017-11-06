@@ -1,4 +1,4 @@
-defmodule PublicKeyAndAddressTest do
+defmodule LoadPublicKeyAndAddressTest do
   use ExUnit.Case
   doctest ElixirWallet
 
