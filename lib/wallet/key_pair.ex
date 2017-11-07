@@ -1,4 +1,4 @@
-defmodule KeyPair do
+defmodule Wallet.KeyPair do
   @moduledoc """
   Module for generating master public and private key
   """

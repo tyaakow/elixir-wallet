@@ -1,4 +1,4 @@
-defmodule Cypher do
+defmodule Wallet.Cypher do
   @moduledoc """
   Module for encrypting and decrypting the mnemonic phrase
   """
@@ -7,7 +7,7 @@ defmodule Cypher do
   Encrypts a given text with the given password
 
   ## Example
-      iex> Cypher.encrypt("text to encrypt", "password")
+      iex> Wallet.Cypher.encrypt("text to encrypt", "password")
       <<136, 7, 40, 34, 243, 197, 46, 85, 173, 122, 0, 176, 1, 60, 15, 99, 19, 160,
       17, 210, 250, 4, 63, 28, 12, 56, 130, 141, 141, 230, 48>>
   """
@@ -24,7 +24,7 @@ defmodule Cypher do
   ## Example
       encrypted = <<136, 7, 40, 34, 243, 197, 46, 85, 173, 122, 0, 176, 1, 60, 15,
       99, 19, 160, 17, 210, 250, 4, 63, 28, 12, 56, 130, 141, 141, 230, 48>>
-      iex> Cypher.decrypt(encrypted, "pass")
+      iex> Wallet.Cypher.decrypt(encrypted, "pass")
       "text to encrypt"
   """
   def decrypt(<<ivec::binary-16, encrypted_text::binary>>, password) do

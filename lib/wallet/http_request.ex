@@ -1,4 +1,4 @@
-defmodule HttpRequest do
+defmodule Wallet.HttpRequest do
 
   @doc """
   Makes a get request to the core
