@@ -1,6 +1,7 @@
 defmodule Wallet.Cypher do
   @moduledoc """
   Module for encrypting and decrypting the mnemonic phrase
+  using AES-256 with CBC encryption mode
   """
 
   @doc """

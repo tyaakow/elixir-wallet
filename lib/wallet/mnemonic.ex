@@ -22,7 +22,7 @@ defmodule Wallet.Mnemonic do
   end
 
   defp get_wordlist() do
-    {:ok, words} = File.read "priv/wordlist.txt"
+    {:ok, words} = File.read "apps/elixir_wallet/priv/wordlist.txt"
     String.replace(words, "\n", ",")
     |> String.split(",")
     |> List.to_tuple()

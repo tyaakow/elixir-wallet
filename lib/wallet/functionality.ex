@@ -25,6 +25,10 @@ defmodule Wallet.Functionality do
   def create_wallet(password \\ "") do
 
     mnemonic_phrase = Mnemonic.generate_phrase(Indexes.generate_indexes)
+
+    ## For now this password is the one for the encrypted file
+    ## it is not a password for the wallet itself like a "salt"
+    ## For now we'll skip adding a password as a "salt" to the mnemonic phrase
     save_wallet_file(mnemonic_phrase, password)
 
     Logger.info("Your wallet was created.")
@@ -51,11 +55,11 @@ defmodule Wallet.Functionality do
 	  "spirit\r beach\r smile\r turn\r glance\r whale\r rack\r reflect\r marble\r cover\r enter\r pigeon"}
   """
   @spec load_wallet_file(String.t(), String.t()) :: Tuple.t()
-  def load_wallet_file(file_path, password) do
+  def load_wallet_file(file_path, password \\ "password") do
     case File.read(file_path) do
       {:ok, encrypted_data} ->
         mnemonic = Cypher.decrypt(encrypted_data, password)
-	{:ok, mnemonic}
+	    {:ok, mnemonic}
       {:error, :enoent} ->
         {:error, "The file does not exist."}
       {:error, :eaccess} ->
@@ -70,13 +74,15 @@ defmodule Wallet.Functionality do
     end
   end
 
-  defp save_wallet_file(mnemonic_phrase, password) do
+  defp save_wallet_file(mnemonic_phrase, password \\ "password") do
     {{year, month, day}, {hours, minutes, seconds}} = :calendar.local_time()
-    file = "wallet--#{year}-#{month}-#{day}-#{hours}-#{minutes}-#{seconds}"
+    path = "apps/elixir_wallet/"
+    file = path <> "wallet--#{year}-#{month}-#{day}-#{hours}-#{minutes}-#{seconds}"
+    IO.inspect file
     {:ok, file} = File.open(file, [:write])
 
     ## TODO: Get the password from the user
-    encrypted = Cypher.encrypt(mnemonic_phrase, "password")
+    encrypted = Cypher.encrypt(mnemonic_phrase, password)
     IO.binwrite(file, encrypted)
     File.close(file)
   end
@@ -91,6 +97,7 @@ defmodule Wallet.Functionality do
   def get_public_key(file_path, password) do
    {_, mnemonic} = load_wallet_file(file_path, password)
 
+   ## The wallet for now is working without an user password (salt)
    KeyPair.generate_root_seed(mnemonic)
    |> elem(1)
   end
