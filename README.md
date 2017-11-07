@@ -1,0 +1,4 @@
+# WalletApi
+
+**TODO: Add description**
+
