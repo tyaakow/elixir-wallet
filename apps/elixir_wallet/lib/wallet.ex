@@ -1,0 +1,3 @@
+defmodule Wallet do
+  
+end
