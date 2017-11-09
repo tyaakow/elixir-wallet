@@ -10,7 +10,7 @@ defmodule ElixirApi.Router do
 
   scope "/", ElixirApi do
     pipe_through :browser # Use the default browser stack
-    get "/get_info", GetInfoController, :get_info
+    get "/info", GetInfoController, :get_info
   end
 
   # Other scopes may use custom stacks.
