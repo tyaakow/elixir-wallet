@@ -12,6 +12,26 @@ Mnemonic.generate_phrase(indexes)
 Further info in the [bitcoinbook](https://github.com/bitcoinbook/bitcoinbook/blob/second_edition/ch05.asciidoc#mnemonic-code-words-bip-39)
 
 
+## Encrypting the mnemonic
+
+The mnemonic phrase is encrypted using the AES algorithm with the CBC cipher mode. In the following diagram you can see how the Cypher Block Chaining (CBC) mode is working.
+
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/CBC_encryption.svg/601px-CBC_encryption.svg.png" width="650" height="250"/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/CBC_decryption.svg/601px-CBC_decryption.svg.png" width="650" height="250"/>
+
+In code goes like follows
+
+```elixir
+Cypher.encrypt("text to encrypt", "password") 
+```
+
+```elixir
+Cypher.decrypt(encrypted, "pass")
+```
+
+
+
 # Creation of master public and private key
 
 ## From Mnemonic to seed
@@ -117,3 +137,4 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/elixir_wallet](https://hexdocs.pm/elixir_wallet).
+
