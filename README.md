@@ -14,11 +14,7 @@ Further info in the [bitcoinbook](https://github.com/bitcoinbook/bitcoinbook/blo
 
 ## Encrypting the mnemonic
 
-The mnemonic phrase is encrypted using the AES algorithm with the CBC cipher mode. In the following diagram you can see how the Cypher Block Chaining (CBC) mode is working.
-
-
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/CBC_encryption.svg/601px-CBC_encryption.svg.png" width="650" height="250"/>
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/CBC_decryption.svg/601px-CBC_decryption.svg.png" width="650" height="250"/>
+The mnemonic phrase is encrypted using the AES algorithm with the CBC cipher mode. In the following diagram you can see how the Cypher Block Chaining (CBC) mode is working. More info [here](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_.28CBC.29)
 
 In code goes like follows
 
