@@ -52,7 +52,7 @@ defmodule Wallet do
       {:ok, encrypted_data} ->
         mnemonic = Cypher.decrypt(encrypted_data, password)
         if (String.valid? mnemonic) do 
-	  {:ok, mnemonic}
+	   {:ok, mnemonic}
         else
           Logger.info("Invalid password")
           {:error, ""}
