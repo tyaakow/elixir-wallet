@@ -21,7 +21,7 @@ defmodule Mnemonic do
   end
 
   defp get_wordlist() do
-    {:ok, word_list} = File.read "apps/elixir_wallet/priv/wordlist.txt"
+    {:ok, word_list} = File.read "priv/wordlist.txt"
     word_list
     |> String.split("\n")
     |> List.to_tuple()
