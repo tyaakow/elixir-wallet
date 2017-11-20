@@ -6,14 +6,14 @@ defmodule KeyPair do
   # Integers modulo the order of the curve (referred to as n)
   @n 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
+  # Mersenne number / TODO: type what it is used for
+  @mersenne_prime 2147483647
+
   # Network versions
   @mainnet_ext_priv_key_version 0x0488ADE4
   @mainnet_ext_pub_key_version  0x0488B21E
   @testnet_ext_priv_key_version 0x04358394
   @testnet_ext_pub_key_version  0x043587CF
-
-  # Mersenne number / TODO: type what it is used for
-  @mersenne_prime 2147483647
 
   # Default depth, child_num and fingerprint values, needed for extended keys
   @depth 0
@@ -161,25 +161,13 @@ defmodule KeyPair do
     build_ext_key(key, @testnet_ext_pub_key_version)
   end
   defp build_ext_key(key, version) do
-    build_ext_key(
+    concat(
       version,
       key.depth,
       key.f_print,
       key.child_num,
       key.chain_code,
       key.key_ser)
-  end
-  defp build_ext_key(@mainnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key) do
-    concat(@mainnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key)
-  end
-  defp build_ext_key(@mainnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key) do
-    concat(@mainnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key)
-  end
-  defp build_ext_key(@testnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key) do
-    concat(@testnet_ext_priv_key_version, depth, f_print, c_num, chain_code, key)
-  end
-  defp build_ext_key(@testnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key) do
-    concat(@testnet_ext_pub_key_version, depth, f_print, c_num, chain_code, key)
   end
 
   defp concat(version, depth, f_print, c_num, chain_code, key) do
@@ -192,10 +180,10 @@ defmodule KeyPair do
         key        :: binary>>)
   end
 
-  defp add_checksum(data_bin) do
-    double_hash = :crypto.hash(:sha256, :crypto.hash(:sha256, data_bin))
+  defp add_checksum(struct_bin) do
+    double_hash = :crypto.hash(:sha256, :crypto.hash(:sha256, struct_bin))
     checksum = <<double_hash::binary-4>>
-    extended_key = data_bin <> checksum
+    extended_key = struct_bin <> checksum
     Base58Check.encode58(extended_key)
   end
 
@@ -329,7 +317,7 @@ defmodule KeyPair do
     |> Base58Check.encode58()
   end
 
-  def serialize(point) do
+  defp serialize(point) do
     first_half =
       point
       |> Base.encode16()
