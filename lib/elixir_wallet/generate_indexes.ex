@@ -31,6 +31,9 @@ defmodule GenerateIndexes do
       |  256  |  8 |   264  |  24  |
   """
 
+  ## 128 bits in bytes
+  @entropy_byte_size 16
+
   @doc """
   Generates random numbers(indexes) using entropy for guaranteed randomness
   ## Examples
@@ -39,13 +42,8 @@ defmodule GenerateIndexes do
   """
   @spec generate_indexes() :: List.t()
   def generate_indexes() do
-    entropy_size = 16
-    entropy = :crypto.strong_rand_bytes(entropy_size)
-    checksum_length = ((entropy_size * 8) / 32) |> trunc()
-    checksum = :crypto.hash(:sha256, entropy)
-    |> Bits.to_binary_list()
-    |> Enum.join()
-    |> String.slice(0..checksum_length)
+    entropy = generate_entropy(@entropy_byte_size)
+    checksum = generate_checksum(entropy, @entropy_byte_size)
 
     entropy
     |> Bits.to_binary_list()
@@ -67,16 +65,13 @@ defmodule GenerateIndexes do
       ["10100110110", "10111000110"]
   """
   @spec split_bits_into_groups(String.t()) :: List.t()
-  def split_bits_into_groups(bits) do
-    Regex.scan(~r/(.{1,11})/, bits)
-    |> Enum.map(fn(elem) -> List.first(elem) end)
-    |> Enum.reverse()
-    |> List.delete_at(0)
+  def split_bits_into_groups(string_bits) do
+    split(string_bits)
   end
 
   @doc """
   Converts binary list (consisting of groups of 11 bits)
-  to reversed byte list (consisting of number from 0 to 2047)
+  to byte list (consisting of number from 0 to 2047)
   ## Examples
       iex> GenerateIndexes.parse_binary_list(["10100110110", "10111000110"])
       [1478, 1334]
@@ -86,9 +81,33 @@ defmodule GenerateIndexes do
     Enum.map(list, fn(binary) ->
       binary_to_byte(binary)
     end)
-    |> List.flatten()
-    |> Enum.reverse()
+  end
+  def binary_to_byte(binary), do: Integer.parse(binary, 2) |> elem(0)
+
+
+
+  ## Private functions
+
+  defp generate_entropy(entropy_byte_size) do
+    :crypto.strong_rand_bytes(entropy_byte_size)
   end
 
-  def binary_to_byte(binary), do: Integer.parse(binary, 2) |> elem(0)
+  defp generate_checksum(entropy, entropy_byte_size) do
+    checksum_length = ((entropy_byte_size * 8) / 32) |> trunc()
+
+    ## Take the first 4 bits
+    :crypto.hash(:sha256, entropy)
+    |> Bits.to_binary_list()
+    |> Enum.join()
+    |> String.slice(0..(checksum_length-1))
+  end
+
+  defp split(string_bits) do
+    split(string_bits, [])
+  end
+  defp split(<<part::binary-11, rest::binary>>, acc) do
+    split(rest, [part | acc])
+  end
+  defp split("", acc), do: Enum.reverse(acc)
+
 end

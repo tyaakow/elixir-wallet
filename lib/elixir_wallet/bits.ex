@@ -13,14 +13,14 @@ defmodule Bits do
       [0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0]
   """
   @spec to_binary_list(Bitstring.t()) :: []
-  def to_binary_list(str) when is_binary(str) do
-    to_binary_list(str, [])
+  def to_binary_list(binary) when is_binary(binary) do
+    to_binary_list(binary, [])
   end
 
-  defp to_binary_list(<<b :: size(1), bits :: bitstring>>, acc) when is_bitstring(bits) do
-    to_binary_list(bits, [b | acc])
+  defp to_binary_list(<<bit::size(1), bits::bitstring>>, acc) do
+    to_binary_list(bits, [bit | acc])
   end
 
-  defp to_binary_list(<<>>, acc), do: acc |> Enum.reverse
+  defp to_binary_list(<<>>, acc), do: Enum.reverse(acc)
 
 end
