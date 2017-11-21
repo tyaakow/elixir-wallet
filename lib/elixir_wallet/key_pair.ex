@@ -3,6 +3,9 @@ defmodule KeyPair do
   Module for generating master public and private key
   """
 
+  # Constant for generating the private_key / chain_code
+  @bitcoin_const "Bitcoin seed"
+
   # Integers modulo the order of the curve (referred to as n)
   @n 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
@@ -58,7 +61,7 @@ defmodule KeyPair do
   @spec generate_master_private_key(String.t()) :: Binary.t()
   def generate_master_private_key(seed) do
     <<private_key::binary-32, _::binary>> =
-      :crypto.hmac(:sha512, "Bitcoin seed", seed)
+      :crypto.hmac(:sha512, @bitcoin_const, seed)
 
     if private_key != 0 or private_key >= @n do
       private_key
@@ -77,7 +80,7 @@ defmodule KeyPair do
   @spec generate_chain_code(String.t()) :: Binary.t()
   def generate_chain_code(seed) do
     <<_::binary-32, chain_code::binary>> =
-      :crypto.hmac(:sha512, "Bitcoin seed", seed)
+      :crypto.hmac(:sha512, @bitcoin_const, seed)
     chain_code
   end
 
@@ -115,12 +118,12 @@ defmodule KeyPair do
       |> serialize()
       |> Base.decode16!()
     key = %{network: network,
-            key_type: :public,
-            key_ser: pub_key_ser,
-            chain_code: generate_chain_code(seed_bin),
             depth: @depth,
+            f_print: @fingerprint,
             child_num: @child_num,
-            f_print: @fingerprint}
+            chain_code: generate_chain_code(seed_bin),
+            key_ser: pub_key_ser,
+            key_type: :public}
     build_ext_key(key)
   end
 
@@ -134,17 +137,18 @@ defmodule KeyPair do
       iex> KeyPair.derive_extend_priv_key(seed, :testnet)
       "tprv8ZgxMBicQKsPd3mhxE7GoPk1L4DnAVxtGW5DS4yqLDzgQUbLy2owBbB4DoqDJv6kgQ1BNbKVvPg6zjA6jGkZ6kgUCpU8iRixWsNDtmesuag"
   """
-  @spec derive_extend_priv_key(String.t(), tuple()) :: String.t()
-  def derive_extend_priv_key(seed_hex, network \\ :mainnet) do
-    seed_bin = Base.decode16!(seed_hex, case: :mixed)
-    priv_key_ser = <<0x00::size(8), generate_master_private_key(seed_bin)::binary>>
+  @spec derive_extend_priv_key(integer(), integer(), integer(), binary(), binary(), tuple()) :: String.t()
+  def derive_extend_priv_key(depth,  f_print, c_num, priv_key, chain_code, network \\ :mainnet) do
+    #seed_bin = Base.decode16!(seed_hex, case: :mixed)
+    #priv_key_ser = <<0x00::size(8), generate_master_private_key(seed_bin)::binary>>
+    priv_key_ser = <<0::8, priv_key::binary>>
     key = %{network: network,
-            key_type: :private,
+            depth: depth,
+            f_print: f_print,
+            child_num: c_num,
+            chain_code: chain_code,
             key_ser: priv_key_ser,
-            chain_code: generate_chain_code(seed_bin),
-            depth: @depth,
-            child_num: @child_num,
-            f_print: @fingerprint}
+            key_type: :private}
     build_ext_key(key)
   end
 
@@ -171,20 +175,40 @@ defmodule KeyPair do
   end
 
   defp concat(version, depth, f_print, c_num, chain_code, key) do
-    add_checksum(
-      <<version    :: size(32),
-        depth      :: size(8),
-        f_print    :: size(32),
-        c_num      :: size(32),
-        chain_code :: binary,
-        key        :: binary>>)
+    #add_checksum(
+    #  <<version    :: size(32),
+    #    depth      :: size(8),
+    #    f_print    :: size(32),
+    #    c_num      :: size(32),
+    #    chain_code :: binary,
+    #    key        :: binary>>)
+
+    {<<version    :: size(32),
+       depth      :: size(8),
+       f_print    :: size(32),
+       c_num      :: size(32),
+       chain_code :: binary,
+       key        :: binary>>,
+     Base58Check.encode58check(
+       <<version    :: size(32)>>,
+       <<depth      :: size(8),
+         f_print    :: size(32),
+         c_num      :: size(32),
+         chain_code :: binary,
+         key        :: binary>>)}
   end
 
   defp add_checksum(struct_bin) do
     double_hash = :crypto.hash(:sha256, :crypto.hash(:sha256, struct_bin))
     checksum = <<double_hash::binary-4>>
-    extended_key = struct_bin <> checksum
+    extended_key = <<struct_bin::binary, checksum::binary>>
     Base58Check.encode58(extended_key)
+  end
+
+  def fingerprint(pub_key_bin) do
+    <<fingerprint::size(32), _rest::binary>> =
+      :crypto.hash(:ripemd160, :crypto.hash(:sha256, pub_key_bin))
+    fingerprint
   end
 
 
@@ -204,15 +228,8 @@ defmodule KeyPair do
   """
   @spec child_private_key_derivation(integer(), binary(), integer()) :: tuple()
   def child_private_key_derivation(parent_private_key, parent_chain_code, index) do
-    serialized_private_key = <<parent_private_key::size(256)>>
-    serialized_index = <<index::size(32)>>
-
-    {point, _} = :crypto.generate_key(:ecdh, :secp256k1, serialized_private_key)
-    serialized_point =
-      point
-      |> serialize()
-      |> Base.decode16()
-      |> elem(1)
+    #serialized_private_key = <<parent_private_key::size(256)>>
+    #serialized_index = <<index::size(32)>>
 
     <<child_type::size(256), child_chain_code::binary>> =
     if index >= :math.pow(2, 31) do
@@ -220,17 +237,24 @@ defmodule KeyPair do
       # Note: The 0x00 pads the private key to make it 33 bytes long
       :crypto.hmac(:sha512,
         parent_chain_code,
-        <<0x00>> <> serialized_private_key <> serialized_index)
+        <<0::8, parent_private_key::binary-32, index::size(32)>>)
     else
       # Normal child
+      {pub_key, _} = :crypto.generate_key(:ecdh, :secp256k1, <<parent_private_key::binary-32>>)
+      compressed_pub_key =
+        pub_key
+        |> serialize()
+        |> Base.decode16!()
+
       :crypto.hmac(:sha512,
         parent_chain_code,
-        serialized_point <> serialized_index)
+        <<compressed_pub_key::binary, index::size(32)>>)
     end
 
-    child_private_key =  child_type + rem(parent_private_key, @n)
+    <<private_key_int::size(256), _rest::binary>> = parent_private_key
+    child_private_key = :binary.encode_unsigned(child_type + rem(private_key_int, @n))
 
-    {:ok, child_private_key, child_chain_code}
+    {child_private_key, child_chain_code}
   end
 
   @doc """
