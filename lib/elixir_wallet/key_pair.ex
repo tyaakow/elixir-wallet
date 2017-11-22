@@ -141,7 +141,12 @@ defmodule KeyPair do
   def derive_extend_priv_key(depth,  f_print, c_num, priv_key, chain_code, network \\ :mainnet) do
     #seed_bin = Base.decode16!(seed_hex, case: :mixed)
     #priv_key_ser = <<0x00::size(8), generate_master_private_key(seed_bin)::binary>>
-    priv_key_ser = <<0::8, priv_key::binary>>
+
+    if is_integer(priv_key) do
+      priv_key_ser = <<0::8, priv_key::size(256)>>
+    else
+      priv_key_ser = <<0::8, priv_key::binary>>
+    end
     key = %{network: network,
             depth: depth,
             f_print: f_print,
@@ -232,12 +237,13 @@ defmodule KeyPair do
     #serialized_index = <<index::size(32)>>
 
     <<child_type::size(256), child_chain_code::binary>> =
-    if index >= :math.pow(2, 31) do
+    if index > @mersenne_prime do
       # Hardned child
       # Note: The 0x00 pads the private key to make it 33 bytes long
+      IO.inspect "Hardned child"
       :crypto.hmac(:sha512,
         parent_chain_code,
-        <<0::8, parent_private_key::binary-32, index::size(32)>>)
+        <<0::8, parent_private_key::binary, index::size(32)>>)
     else
       # Normal child
       {pub_key, _} = :crypto.generate_key(:ecdh, :secp256k1, <<parent_private_key::binary-32>>)
@@ -252,7 +258,7 @@ defmodule KeyPair do
     end
 
     <<private_key_int::size(256), _rest::binary>> = parent_private_key
-    child_private_key = :binary.encode_unsigned(child_type + rem(private_key_int, @n))
+    child_private_key = child_type + rem(private_key_int, @n)
 
     {child_private_key, child_chain_code}
   end
