@@ -50,18 +50,18 @@ defmodule Wallet do
     case File.read(file_path) do
       {:ok, encrypted_data} ->
         mnemonic = Cypher.decrypt(encrypted_data, password)
-      {:ok, mnemonic}
-        {:error, :enoent} ->
-          {:error, "The file does not exist."}
-        {:error, :eaccess} ->
-          {:error, "Missing permision for reading the file,
-          or for searching one of the parent directories."}
-        {:error, :eisdir} ->
-          {:error, "The named file is a directory."}
-        {:error, :enotdir} ->
-          {:error, "A component of the file name is not a directory."}
-        {:error, :enomem} ->
-          {:error, "There is not enough memory for the contents of the file."}
+  {:ok, mnemonic}
+      {:error, :enoent} ->
+        {:error, "The file does not exist."}
+      {:error, :eaccess} ->
+        {:error, "Missing permision for reading the file,
+        or for searching one of the parent directories."}
+      {:error, :eisdir} ->
+        {:error, "The named file is a directory."}
+      {:error, :enotdir} ->
+        {:error, "A component of the file name is not a directory."}
+      {:error, :enomem} ->
+        {:error, "There is not enough memory for the contents of the file."}
     end
   end
 
@@ -88,7 +88,6 @@ defmodule Wallet do
   def get_public_key(file_path, password) do
    {_, mnemonic} = load_wallet_file(file_path, password)
    public_key = Kernel.elem(KeyPair.generate_root_seed(mnemonic), 1)  
-   Base.decode16(public_key)
    end  
   
   @doc """
@@ -114,6 +113,5 @@ defmodule Wallet do
   def get_private_key(file_path, password) do
     {_, mnemonic} = Wallet.load_wallet_file(file_path, password)   
     private_key = Kernel.elem(KeyPair.generate_root_seed(mnemonic), 0)
-    Base.decode16(private_key)
   end
 end
