@@ -20,6 +20,7 @@ defmodule Wallet do
   def create_wallet(password, salt \\ "") do
 
     mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes) <> " " <> salt
+
     save_wallet_file(mnemonic_phrase, password)
 
     Logger.info("Your wallet was created.")
@@ -32,7 +33,7 @@ defmodule Wallet do
   If the wallet was not password protected, just pass the mnemonic_phrase
   """
   @spec import_wallet(String.t(), String.t()) :: String.t()
-  def import_wallet(mnemonic_phrase, password) do
+  def import_wallet(mnemonic_phrase, password, salt \\ "") do
     save_wallet_file(mnemonic_phrase, password)
     Logger.info("You have successfully imported a wallet")
   end
@@ -51,16 +52,18 @@ defmodule Wallet do
       {:ok, encrypted_data} ->
         mnemonic = Cypher.decrypt(encrypted_data, password)
         if (String.valid? mnemonic) do 
-          if String.contains?(mnemonic, salt) do
+          mnemonic_list = String.split(mnemonic)
+          salt_check = Enum.at(mnemonic_list, 12)
+          if (salt == salt_check) do
              mnemonic = String.replace(mnemonic, " " <> salt, "")          
              {:ok, mnemonic}
           else
-             Logger.info("Invalid salt")
-             {:error, ""}
+             Logger.error("Invalid salt")
+             {:error, "Invalid salt"}
           end
         else 
-           Logger.info("Invalid password")
-           {:error, ""}          
+           Logger.error("Invalid password")
+           {:error, "Invalid password"}          
         end  
       {:error, :enoent} ->
         {:error, "The file does not exist."}
@@ -90,10 +93,12 @@ defmodule Wallet do
     {validation, mnemonic} = load_wallet_file(file_path, password, salt)
      
     if (validation != :error) do 
-      {_, public_key} = Kernel.elem(KeyPair.generate_root_seed(mnemonic, salt), 1) |> Base.decode16()
+      public_key =
+      KeyPair.generate_root_seed(mnemonic, salt)
+      |> elem(1)
       {:ok, public_key}
     else
-      {:error, ""}
+      {:error, mnemonic}
     end  
   end 
   
@@ -112,7 +117,7 @@ defmodule Wallet do
       address = KeyPair.generate_wallet_address(public_key) 
       {:ok, address}
     else
-      {:error, ""}
+      {:error, public_key}
     end  
   end
 
@@ -129,10 +134,12 @@ defmodule Wallet do
     {validation, mnemonic} = load_wallet_file(file_path, password, salt)
      
     if (validation != :error) do 
-      {_, private_key} = Kernel.elem(KeyPair.generate_root_seed(mnemonic, salt), 0) |> Base.decode16()
+      private_key =
+      KeyPair.generate_root_seed(mnemonic, salt)
+      |> elem(0)
       {:ok, private_key}
     else
-      {:error, ""}
+      {:error, mnemonic}
     end  
   end
 
