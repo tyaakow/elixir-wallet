@@ -17,9 +17,9 @@ defmodule Wallet do
       sand trip update spring
   """
   @spec create_wallet(String.t()) :: String.t()
-  def create_wallet(password, salt \\ "") do
+  def create_wallet(password, pass_phrase \\ "") do
 
-    mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes) <> " " <> salt
+    mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes) <> " " <> pass_phrase
 
     save_wallet_file(mnemonic_phrase, password)
 
@@ -33,7 +33,7 @@ defmodule Wallet do
   If the wallet was not password protected, just pass the mnemonic_phrase
   """
   @spec import_wallet(String.t(), String.t()) :: String.t()
-  def import_wallet(mnemonic_phrase, password, salt \\ "") do
+  def import_wallet(mnemonic_phrase, password, pass_phrase \\ "") do
     save_wallet_file(mnemonic_phrase, password)
     Logger.info("You have successfully imported a wallet")
   end
@@ -47,23 +47,27 @@ defmodule Wallet do
       "spirit\r beach\r smile\r turn\r glance\r whale\r rack\r reflect\r marble\r cover\r enter\r pigeon"}
   """
   @spec load_wallet_file(String.t(), String.t()) :: Tuple.t()
-  def load_wallet_file(file_path, password, salt \\ "") do
+  def load_wallet_file(file_path, password, pass_phrase \\ "") do
     case File.read(file_path) do
       {:ok, encrypted_data} ->
         mnemonic = Cypher.decrypt(encrypted_data, password)
         if (String.valid? mnemonic) do 
           mnemonic_list = String.split(mnemonic)
-          salt_check = Enum.at(mnemonic_list, 12)
-          if (salt == salt_check) do
-             mnemonic = String.replace(mnemonic, " " <> salt, "")          
-             {:ok, mnemonic}
-          else
-             Logger.error("Invalid salt")
-             {:error, "Invalid salt"}
-          end
+          pass_phrase_check = Enum.at(mnemonic_list, 12)
+        case pass_phrase_check do 
+          :nil -> {:ok , mnemonic}
+          result -> 
+            if result == pass_phrase do 
+              mnemonic = String.replace(mnemonic, " " <> pass_phrase, "")          
+              {:ok, mnemonic} 
+            else 
+              Logger.error("Invalid pass phrase")
+              {:error, "Invalid pass phrase"}
+            end
+        end
         else 
-           Logger.error("Invalid password")
-           {:error, "Invalid password"}          
+          Logger.error("Invalid password")
+          {:error, "Invalid password"}          
         end  
       {:error, :enoent} ->
         {:error, "The file does not exist."}
@@ -89,12 +93,12 @@ defmodule Wallet do
       15, 19, 179, 45, 42, 79, 118, 24, 160, 20, 64, 178, 109, 124, 172, 127, ...>>}
   """
   @spec get_public_key(String.t(), String.t()) :: Tuple.t()
-  def get_public_key(file_path, password, salt \\ "") do
-    {validation, mnemonic} = load_wallet_file(file_path, password, salt)
+  def get_public_key(file_path, password, pass_phrase \\ "") do
+    {validation, mnemonic} = load_wallet_file(file_path, password, pass_phrase)
      
     if (validation != :error) do 
       public_key =
-      KeyPair.generate_root_seed(mnemonic, salt)
+      KeyPair.generate_root_seed(mnemonic, pass_phrase)
       |> elem(1)
       {:ok, public_key}
     else
@@ -110,8 +114,8 @@ defmodule Wallet do
       {:ok, "1NM51tw1MixFCe64g6ExhCEXnowEGrQ2DE"}
   """
   @spec get_address(String.t(), String.t()) :: Tuple.t()
-  def get_address(file_path, password, salt \\ "") do
-    {validation, public_key} = get_public_key(file_path, password, salt)
+  def get_address(file_path, password, pass_phrase \\ "") do
+    {validation, public_key} = get_public_key(file_path, password, pass_phrase)
 
     if (validation != :error) do 
       address = KeyPair.generate_wallet_address(public_key) 
@@ -130,12 +134,12 @@ defmodule Wallet do
       89, 115, 59, 231, 28, 142, 137, 119, 62, 19, 102, 238, 171, 185>>}
   """
   @spec get_private_key(String.t(), String.t()) :: Tuple.t()
-  def get_private_key(file_path, password, salt \\ "") do
-    {validation, mnemonic} = load_wallet_file(file_path, password, salt)
+  def get_private_key(file_path, password, pass_phrase \\ "") do
+    {validation, mnemonic} = load_wallet_file(file_path, password, pass_phrase)
      
     if (validation != :error) do 
       private_key =
-      KeyPair.generate_root_seed(mnemonic, salt)
+      KeyPair.generate_root_seed(mnemonic, pass_phrase)
       |> elem(0)
       {:ok, private_key}
     else
