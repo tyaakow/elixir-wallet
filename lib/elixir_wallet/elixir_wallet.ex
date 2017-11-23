@@ -19,14 +19,18 @@ defmodule Wallet do
   @spec create_wallet(String.t()) :: String.t()
   def create_wallet(password, pass_phrase \\ "") do
 
-    mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes) <> " " <> pass_phrase
-
-    save_wallet_file(mnemonic_phrase, password)
+    mnemonic_phrase = Mnemonic.generate_phrase(GenerateIndexes.generate_indexes)
+  	if (pass_phrase != "") do 
+	    mnemonic_phrase_with_pass_phrase = mnemonic_phrase <> " " <> pass_phrase
+	    save_wallet_file(mnemonic_phrase_with_pass_phrase, password)
+	  else 
+	    save_wallet_file(mnemonic_phrase, password)
+	  end
 
     Logger.info("Your wallet was created.")
     Logger.info("Use the following phrase as additional authentication when accessing your wallet:")
     Logger.info(mnemonic_phrase)
-  end
+end
 
   @doc """
   Creates a wallet file from an existing mnemonic_phrase and password
