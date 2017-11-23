@@ -37,8 +37,8 @@ defmodule KeyPair do
       }
   """
   @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()
-  def generate_root_seed(mnemonic, salt \\ "", opts \\ []) do
-    generate_master_keys(SeedGenerator.generate(mnemonic, salt, opts))
+  def generate_root_seed(mnemonic, password \\ "", opts \\ []) do
+    generate_master_keys(SeedGenerator.generate(mnemonic, password, opts))
   end
  
   def generate_master_keys(seed) do
@@ -299,7 +299,7 @@ defmodule KeyPair do
       64, 153, 54, 215, 51, 243, 112, 242, 93, 115, 254, 161, 110, 223, 219, ...>>)
       '1C7RcPXiqwnaJgfvLmoicS3AaBGYyKbiW8'
   """
-  @spec generate_wallet_address(String.t()) :: String.t()
+  @spec generate_wallet_address(Binary.t()) :: String.t()
   def generate_wallet_address(public_key) do
     public_sha256 = :crypto.hash(:sha256, public_key)
 
