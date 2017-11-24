@@ -98,15 +98,15 @@ defmodule Wallet do
   """
   @spec get_public_key(String.t(), String.t()) :: Tuple.t()
   def get_public_key(file_path, password, pass_phrase \\ "") do
-    {validation, mnemonic} = load_wallet_file(file_path, password, pass_phrase)
-     
-    if (validation != :error) do 
-      public_key =
-      KeyPair.generate_root_seed(mnemonic, pass_phrase)
-      |> elem(1)
-      {:ok, public_key}
-    else
-      {:error, mnemonic}
+    {validation, reply} = load_wallet_file(file_path, password, pass_phrase)
+          
+    case validation do
+      :ok -> 
+        public_key =
+        KeyPair.generate_root_seed(reply, pass_phrase)
+        |> elem(1)
+        {:ok, public_key}
+      :error -> {:error, reply}
     end  
   end 
   
@@ -119,14 +119,14 @@ defmodule Wallet do
   """
   @spec get_address(String.t(), String.t()) :: Tuple.t()
   def get_address(file_path, password, pass_phrase \\ "") do
-    {validation, public_key} = get_public_key(file_path, password, pass_phrase)
+    {validation, reply} = get_public_key(file_path, password, pass_phrase)
 
-    if (validation != :error) do 
-      address = KeyPair.generate_wallet_address(public_key) 
-      {:ok, address}
-    else
-      {:error, public_key}
-    end  
+    case validation do
+      :ok -> 
+        address = KeyPair.generate_wallet_address(reply) 
+        {:ok, address}
+      :error -> {:error, reply}
+    end
   end
 
   @doc """
@@ -139,15 +139,15 @@ defmodule Wallet do
   """
   @spec get_private_key(String.t(), String.t()) :: Tuple.t()
   def get_private_key(file_path, password, pass_phrase \\ "") do
-    {validation, mnemonic} = load_wallet_file(file_path, password, pass_phrase)
+    {validation, reply} = load_wallet_file(file_path, password, pass_phrase)
      
-    if (validation != :error) do 
-      private_key =
-      KeyPair.generate_root_seed(mnemonic, pass_phrase)
-      |> elem(0)
-      {:ok, private_key}
-    else
-      {:error, mnemonic}
+    case validation do
+      :ok -> 
+        private_key =
+        KeyPair.generate_root_seed(reply, pass_phrase)
+        |> elem(0)
+        {:ok, private_key}
+      :error -> {:error, reply}
     end  
   end
 
