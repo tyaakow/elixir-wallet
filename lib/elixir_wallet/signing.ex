@@ -30,14 +30,14 @@ defmodule Signing do
       168, 175, 243, 132, 39, 71, 208, 94, 138, 190, 242, 78, 74, 141, 43, 58, 241,
       15, 19, 179, 45, 42, 79, 118, 24, 160, 20, 64, 178, 109, 124, 172, 127, ...>>)
       
-      {:ok, true}
+      :true
   """
-  @spec verify(Binary.t(), Binary.t(), Binary.t()) :: Tuple.t()
+  @spec verify(Binary.t(), Binary.t(), Binary.t()) :: Atom.t()
   def verify(message, signature_bin, pubkey_bin) do
     if (:crypto.verify(:ecdsa, :sha256, message, signature_bin, [pubkey_bin, :secp256k1])) do
-      {:ok, true}
+      :true
     else
-      {:error, false}
+      :false
     end 
   end
 end
