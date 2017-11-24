@@ -57,11 +57,14 @@ defmodule ChildKeyDerivation do
 
     ##{pub_key, child_chain_code} = KeyPair.child_public_key_derivation(master_pub_key, master_chain_code, index)
 
-    ##{child_bin, child_base58} =
-    #  KeyPair.derive_extend_pub_key(1, f_print, index, child_key, child_chain_code)
+    pub = KeyPair.generate_master_public_key(child_key) |> KeyPair.serialize() |> Base.decode16!()
 
-    #assert "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw"
-    #= child_base58
+
+    {child_bin, child_base58} =
+      KeyPair.derive_extend_pub_key(1, f_print, index, pub, child_chain_code)
+
+    assert "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw"
+    = child_base58
 
 
 

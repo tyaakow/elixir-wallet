@@ -3,6 +3,11 @@ defmodule KeyPair do
   Module for generating master public and private key
   """
 
+
+  alias Structs.Bip32PubKey
+  alias Structs.Bip32PrivKey
+
+
   # Constant for generating the private_key / chain_code
   @bitcoin_const "Bitcoin seed"
 
@@ -99,6 +104,18 @@ defmodule KeyPair do
     public_key
   end
 
+  def default_key() do
+    Bip32PrivKey.create(:mainnet)
+  end
+
+  def test(%Bip32PubKey{key: key}) do
+    IO.inspect "PubKey"
+  end
+
+  def test(%Bip32PrivKey{key: key}) do
+    IO.inspect "PrivKey"
+  end
+
   @doc """
   Derives an Extended Public key from a given seed and network
   If a network is not specified, :mainnet will be used
@@ -142,11 +159,11 @@ defmodule KeyPair do
     #seed_bin = Base.decode16!(seed_hex, case: :mixed)
     #priv_key_ser = <<0x00::size(8), generate_master_private_key(seed_bin)::binary>>
 
-    if is_integer(priv_key) do
-      priv_key_ser = <<0::8, priv_key::size(256)>>
-    else
-      priv_key_ser = <<0::8, priv_key::binary>>
-    end
+    priv_key_ser =
+      case is_integer(priv_key) do
+       true -> <<0::8, priv_key::size(256)>>
+       false -> <<0::8, priv_key::binary>>
+      end
     key = %{network: network,
             depth: depth,
             f_print: f_print,
