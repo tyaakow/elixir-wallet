@@ -109,19 +109,19 @@ defmodule KeyPair do
       iex> KeyPair.derive_extend_pub_key(seed, :testnet)
       "tpubD6NzVbkrYhZ4WWoVqsmsCoQ7u5jiKq9nqofzib28kVo5Exr7bRdXN5nvPw6ycbeNuaaKL2HfvRraMsq1WiePkAj5gScEgSNzvVgroTkVymv"
   """
-  @spec derive_extend_pub_key(String.t(), tuple()) :: String.t()
-  def derive_extend_pub_key(seed_hex, network \\ :mainnet) do
-    seed_bin = Base.decode16!(seed_hex, case: :mixed)
-    pub_key_ser =
-      generate_master_private_key(seed_bin)
-      |> generate_master_public_key()
-      |> serialize()
-      |> Base.decode16!()
+  @spec derive_extend_pub_key(integer(), integer(), integer(), binary(), binary(), tuple()) :: String.t()
+  def derive_extend_pub_key(depth,  f_print, c_num, pub_key_ser, chain_code, network \\ :mainnet) do
+    #seed_bin = Base.decode16!(seed_hex, case: :mixed)
+    #pub_key_ser =
+    #  generate_master_private_key(seed_bin)
+    #  |> generate_master_public_key()
+    #  |> serialize()
+    #  |> Base.decode16!()
     key = %{network: network,
-            depth: @depth,
-            f_print: @fingerprint,
-            child_num: @child_num,
-            chain_code: generate_chain_code(seed_bin),
+            depth: depth,
+            f_print: f_print,
+            child_num: c_num,
+            chain_code: chain_code,
             key_ser: pub_key_ser,
             key_type: :public}
     build_ext_key(key)
@@ -190,14 +190,14 @@ defmodule KeyPair do
 
     {<<version    :: size(32),
        depth      :: size(8),
-       f_print    :: size(32),
+       f_print    :: binary-4,
        c_num      :: size(32),
        chain_code :: binary,
        key        :: binary>>,
      Base58Check.encode58check(
        <<version    :: size(32)>>,
        <<depth      :: size(8),
-         f_print    :: size(32),
+         f_print    :: binary-4,
          c_num      :: size(32),
          chain_code :: binary,
          key        :: binary>>)}
@@ -211,7 +211,7 @@ defmodule KeyPair do
   end
 
   def fingerprint(pub_key_bin) do
-    <<fingerprint::size(32), _rest::binary>> =
+    <<fingerprint::binary-4, _rest::binary>> =
       :crypto.hash(:ripemd160, :crypto.hash(:sha256, pub_key_bin))
     fingerprint
   end
@@ -317,7 +317,7 @@ defmodule KeyPair do
 
     child_public_key =  point_int + pub_int
 
-    {:ok, child_public_key, child_chain_code}
+    {child_public_key, child_chain_code}
   end
 
   @doc """
@@ -347,7 +347,7 @@ defmodule KeyPair do
     |> Base58Check.encode58()
   end
 
-  defp serialize(point) do
+  def serialize(point) do
     first_half =
       point
       |> Base.encode16()
