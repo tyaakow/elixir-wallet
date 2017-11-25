@@ -15,7 +15,7 @@ defmodule Signing do
   """
   @spec sign(Binary.t(), Binary.t()) :: Binary.t()
   def sign(message, privkey_bin) do
-    signature = :crypto.sign(:ecdsa, :sha256, message, [privkey_bin, :secp256k1])
+    :crypto.sign(:ecdsa, :sha256, message, [privkey_bin, :secp256k1])
   end
 
   @doc """
