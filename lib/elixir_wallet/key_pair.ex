@@ -26,26 +26,27 @@ defmodule KeyPair do
   ## Example
       iex> KeyPair.generate_root_seed("mnemonic", "pass")
 
-      %{"6C055755B1F6E97DFFC1C40C1BD4919C48938B211139C12C3F04A7F011D8DD20",
-      "03C6D13F979E118C97029A3F210AA207CA6695908BA814271472ED1775E4FFBC75",
-      <<18, 216, 49, 31, 0, 27, 92, 61, 81, 76, 17, 212, 106, 24, 176, 124, 144, 111,
-      182, 17, 157, 236, 54, 168, 91, 92, 99, 234, 76, 232, 20, 169>>
+      %{<<54, 67, 48, 53, 53, 55, 53, 53, 66, 49, 70, 54, 69, 57, 55, 68, 70, 70, 67,
+        49, 67, 52, 48, 67, 49, 66, 68, 52, 57, 49, 57, 67, 52, 56, 57, 51, 56, 66,
+        50, 49, 49, 49, 51, 57, 67, 49, 50, 67, 51, 70, ...>>,
+        <<48, 51, 67, 54, 68, 49, 51, 70, 57, 55, 57, 69, 49, 49, 56, 67, 57, 55, 48,
+        50, 57, 65, 51, 70, 50, 49, 48, 65, 65, 50, 48, 55, 67, 65, 54, 54, 57, 53,
+        57, 48, 56, 66, 65, 56, 49, 52, 50, 55, 49, 52, ...>>,
+        <<18, 216, 49, 31, 0, 27, 92, 61, 81, 76, 17, 212, 106, 24, 176, 124, 144, 111,
+        182, 17, 157, 236, 54, 168, 91, 92, 99, 234, 76, 232, 20, 169>>
       }
   """
   @spec generate_root_seed(String.t(), String.t(), List.t()) :: Map.t()
-  def generate_root_seed(mnemonic, password \\ "", opts \\ []) do
-    generate_master_keys(SeedGenerator.generate(mnemonic, password, opts))
+  def generate_root_seed(mnemonic, salt \\ "", opts \\ []) do
+    generate_master_keys(SeedGenerator.generate(mnemonic, salt, opts))
   end
-
+ 
   def generate_master_keys(seed) do
     private_key_bin = generate_master_private_key(seed)
     public_key_bin = generate_master_public_key(private_key_bin)
     chain_code = generate_chain_code(seed)
 
-    private_key_hex = private_key_bin |> Base.encode16()
-    public_key_hex = public_key_bin |> Base.encode16()
-
-    {private_key_hex, public_key_hex, chain_code}
+    {private_key_bin, public_key_bin, chain_code}
   end
 
   @doc """
@@ -293,12 +294,14 @@ defmodule KeyPair do
   @doc """
   Generates wallet address from a given public key
   ## Example
-      iex> KeyPair.generate_wallet_address("03AE1B3F8386C6F8B08745E290DA4F7B1B6EBD2287C2505567A2A311BA09EE53F3")
+      iex> KeyPair.generate_wallet_address(<<4, 248, 61, 147, 39, 246, 10, 183, 202, 180, 8, 90, 254, 166, 88, 29, 183,
+      37, 46, 251, 55, 62, 133, 24, 97, 91, 217, 85, 215, 209, 196, 185, 157, 243,
+      64, 153, 54, 215, 51, 243, 112, 242, 93, 115, 254, 161, 110, 223, 219, ...>>)
       '1C7RcPXiqwnaJgfvLmoicS3AaBGYyKbiW8'
   """
   @spec generate_wallet_address(String.t()) :: String.t()
   def generate_wallet_address(public_key) do
-    public_sha256 = :crypto.hash(:sha256, Base.decode16!(public_key))
+    public_sha256 = :crypto.hash(:sha256, public_key)
 
     public_ripemd160 = :crypto.hash(:ripemd160, public_sha256)
 
