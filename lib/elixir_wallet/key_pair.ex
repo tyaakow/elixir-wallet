@@ -56,6 +56,125 @@ defmodule KeyPair do
     {private_key_hex, public_key_hex, chain_code}
   end
 
+
+
+
+
+  def generate_seed(mnemonic, pass_phrase \\ "", opts \\ []) do
+    SeedGenerator.generate(mnemonic, pass_phrase, opts)
+  end
+
+  def generate_master_key(:seed, seed) do
+    generate_master_key(:private, :crypto.hmac(:sha512, @bitcoin_const, seed))
+  end
+
+  def generate_master_key(:private, <<priv_key::binary-32, chain_code::binary>>) do
+    key = Bip32PrivKey.create(:mainnet)
+    key = %{key | key: priv_key, chain_code: chain_code}
+    KeyPair.derive(key, "m/0'/1")
+  end
+
+  def derive(key, <<"m/", path::binary>>) do
+    derive_pathlist(key, :lists.map(fn(e) ->
+      case String.reverse(e) do
+        <<"'", hardened::binary>> ->
+          {num, _rest} = Integer.parse(String.reverse(hardened))
+          final = num + @mersenne_prime + 1
+          final
+        _ ->
+          {num, _rest} = Integer.parse(e)
+          num
+      end
+    end, :binary.split(path, <<"/">>, [:global])))
+  end
+
+  def derive_pathlist(key, []) do
+    concat(
+      key.version,
+      key.depth,
+      key.f_print,
+      key.child_num,
+      key.chain_code,
+      <<0::8, key.key::binary>>)
+  end
+  def derive_pathlist(key, pathlist) do
+    [index | rest] = pathlist
+    derive_pathlist(derive_key(key, index), rest)
+  end
+
+  def derive_key(%Bip32PrivKey{key: priv_key, chain_code: c, depth: d} = key, index) when index > @mersenne_prime do
+    {child_key, child_chain} =
+      KeyPair.child_private_key_derivation(priv_key, c, index)
+    f_print =
+      priv_key
+      |> KeyPair.generate_master_public_key()
+      |> KeyPair.serialize()
+      |> Base.decode16!()
+      |> KeyPair.fingerprint()
+    key = %{key |
+            key: child_key,
+            chain_code: child_chain,
+            depth: d+1,
+            f_print: f_print,
+            child_num: index}
+  end
+
+  def derive_key(%Bip32PrivKey{key: priv_key, chain_code: c, depth: d} = key, index) when index <= @mersenne_prime do
+
+    IO.inspect priv_key
+    {child_key, child_chain} =
+      KeyPair.child_private_key_derivation(priv_key, c, index)
+    f_print =
+      priv_key
+      |> KeyPair.generate_master_public_key()
+      |> KeyPair.serialize()
+      |> Base.decode16!()
+      |> KeyPair.fingerprint()
+
+
+    IO.inspect child_key
+    IO.inspect child_chain
+
+    key = %{key |
+            key: child_key,
+            chain_code: child_chain,
+            depth: d+1,
+            f_print: f_print,
+            child_num: index}
+  end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   @doc """
   Generates Master Private key from a given seed
   ## Example
@@ -102,18 +221,6 @@ defmodule KeyPair do
     {public_key, _} =
       :crypto.generate_key(:ecdh, :secp256k1, private_key_bin)
     public_key
-  end
-
-  def default_key() do
-    Bip32PrivKey.create(:mainnet)
-  end
-
-  def test(%Bip32PubKey{key: key}) do
-    IO.inspect "PubKey"
-  end
-
-  def test(%Bip32PrivKey{key: key}) do
-    IO.inspect "PrivKey"
   end
 
   @doc """
@@ -250,34 +357,34 @@ defmodule KeyPair do
   """
   @spec child_private_key_derivation(integer(), binary(), integer()) :: tuple()
   def child_private_key_derivation(parent_private_key, parent_chain_code, index) do
-    #serialized_private_key = <<parent_private_key::size(256)>>
-    #serialized_index = <<index::size(32)>>
-
-    <<child_type::size(256), child_chain_code::binary>> =
+    <<child_type::binary-32, child_chain_code::binary>> =
     if index > @mersenne_prime do
       # Hardned child
       # Note: The 0x00 pads the private key to make it 33 bytes long
-      IO.inspect "Hardned child"
       :crypto.hmac(:sha512,
         parent_chain_code,
         <<0::8, parent_private_key::binary, index::size(32)>>)
     else
       # Normal child
-      {pub_key, _} = :crypto.generate_key(:ecdh, :secp256k1, <<parent_private_key::binary-32>>)
       compressed_pub_key =
-        pub_key
+        generate_master_public_key(parent_private_key)
         |> serialize()
         |> Base.decode16!()
+
+      IO.inspect compressed_pub_key
 
       :crypto.hmac(:sha512,
         parent_chain_code,
         <<compressed_pub_key::binary, index::size(32)>>)
     end
 
-    <<private_key_int::size(256), _rest::binary>> = parent_private_key
-    child_private_key = child_type + rem(private_key_int, @n)
+    IO.inspect child_type
 
-    {child_private_key, child_chain_code}
+    <<child_type_int::size(256)>> = child_type
+    <<private_key_int::size(256)>> = parent_private_key
+    child_private_key = child_type_int + rem(private_key_int, @n)
+
+    {<<child_private_key::size(256)>>, child_chain_code}
   end
 
   @doc """
